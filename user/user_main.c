@@ -1,3 +1,5 @@
+//Copyright 2015 <>< Charles Lohr, see LICENSE file.
+
 #include "mem.h"
 #include "c_types.h"
 #include "user_interface.h"
