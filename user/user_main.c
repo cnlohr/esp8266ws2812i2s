@@ -20,7 +20,8 @@
 
 static volatile os_timer_t some_timer;
 static struct espconn *pUdpServer;
-
+uint8_t last_leds[512*3];
+int last_led_count;
 void user_rf_pre_init(void)
 {
 	//nothing.
@@ -42,6 +43,8 @@ static void ICACHE_FLASH_ATTR
 procTask(os_event_t *events)
 {
 	system_os_post(procTaskPrio, 0, 0 );
+
+	CSTick( 0 );
 
 	if( events->sig == 0 && events->par == 0 )
 	{
@@ -82,6 +85,8 @@ procTask(os_event_t *events)
 static void ICACHE_FLASH_ATTR
  myTimer(void *arg)
 {
+	CSTick( 1 );
+
 	uart0_sendStr(".");
 //	printf( "%d\n",underrunCnt );
 //	uint8_t ledout[] = { 0x00, 0xff, 0xaa, 0x00, 0xff, 0xaa, };
@@ -98,7 +103,15 @@ udpserver_recv(void *arg, char *pusrdata, unsigned short len)
 
 //	uint8_t ledout[] = { 0x00, 0xff, 0xaa, 0x00, 0xff, 0xaa, };
 	uart0_sendStr("X");
-	ws2812_push( pusrdata, len );
+	ws2812_push( pusrdata+3, len-3 );
+
+	len -= 3;
+	if( len > sizeof(last_leds) + 3 )
+	{
+		len = sizeof(last_leds) + 3;
+	}
+	ets_memcpy( last_leds, pusrdata+3, len );
+	last_led_count = len / 3;
 }
 
 void ICACHE_FLASH_ATTR charrx( uint8_t c )
@@ -115,8 +128,11 @@ void user_init(void)
 	uart0_sendStr("\r\nCustom Server\r\n");
 
 
-	wifi_set_opmode( 2 ); //We broadcast our ESSID, wait for peopel to join.
+//Uncomment this to force a system restore.
+//	system_restore();
 
+
+	CSPreInit();
 /*
 	struct station_config stationConf;
 	wifi_set_opmode( 1 ); //We broadcast our ESSID, wait for peopel to join.
@@ -142,6 +158,8 @@ void user_init(void)
 		while(1) { uart0_sendStr( "\r\nFAULT\r\n" ); }
 	}
 
+	CSInit();
+
 	//Add a process
 	system_os_task(procTask, procTaskPrio, procTaskQueue, procTaskQueueLen);
 
@@ -153,6 +171,16 @@ void user_init(void)
 	ws2812_init();
 
 	system_os_post(procTaskPrio, 0, 0 );
+}
+
+
+//There is no code in this project that will cause reboots if interrupts are disabled.
+void EnterCritical()
+{
+}
+
+void ExitCritical()
+{
 }
 
 

@@ -6,6 +6,13 @@ TARGET_OUT:=image.elf
 
 
 SRCS:=driver/uart.c \
+	common/mystuff.c \
+	common/flash_rewriter.c \
+	common/http.c \
+	common/commonservices.c \
+	common/http_custom.c \
+	common/mfs.c \
+	user/custom_commands.c \
 	user/mystuff.c \
 	user/ws2812_i2s.c \
 	user/user_main.c 
@@ -23,7 +30,7 @@ FOLDERPREFIX:=$(GCC_FOLDER)/bin
 PREFIX:=$(FOLDERPREFIX)/xtensa-lx106-elf-
 CC:=$(PREFIX)gcc
 
-CFLAGS:=-mlongcalls -I$(SDK)/include -Imyclib -Iinclude -Iuser -Os -I$(SDK)/include/
+CFLAGS:=-mlongcalls -I$(SDK)/include -Imyclib -Iinclude -Iuser -Os -I$(SDK)/include/ -Icommon -DICACHE_FLASH
 
 #	   \
 #
@@ -69,6 +76,11 @@ $(FW_FILE_2): $(TARGET_OUT)
 burn : $(FW_FILE_1) $(FW_FILE_2)
 	($(ESPTOOL_PY) --port $(PORT) write_flash 0x00000 0x00000.bin 0x40000 0x40000.bin)||(true)
 
+
+IP?=192.168.4.1
+
+netburn : image.elf $(FW_FILE_1) $(FW_FILE_2)
+	web/execute_reflash $(IP) 0x00000.bin 0x40000.bin
 
 clean :
 	rm -rf user/*.o driver/*.o $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2)
