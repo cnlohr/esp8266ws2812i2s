@@ -215,7 +215,27 @@ function BSSIDClick( i )
 	document.wifisection.wifimac.value = tlines[1];
 	document.wifisection.wificurchannel.value = 0;
 
+	ClickOpmode( 1 );
 	return false;
+}
+
+function ClickOpmode( i )
+{
+	if( i == 1 )
+	{
+		document.wifisection.wificurname.disabled = false;
+		document.wifisection.wificurpassword.disabled = false;
+		document.wifisection.wifimac.disabled = false;
+		document.wifisection.wificurchannel.disabled = true;
+	}
+	else
+	{
+		document.wifisection.wificurname.disabled = false;
+		document.wifisection.wificurpassword.disabled = true;
+		document.wifisection.wificurpassword.value = "";
+		document.wifisection.wifimac.disabled = true;
+		document.wifisection.wificurchannel.disabled = false;
+	}
 }
 
 function WifiDataTicker()
@@ -230,12 +250,14 @@ function WifiDataTicker()
 			{
 				var params = data.split( "\t" );
 			
-				document.wifisection.wifitype.value = Number( params[0].substr(2) );
+				var opmode = Number( params[0].substr(2) );
+				document.wifisection.wifitype.value = opmode;
 				document.wifisection.wificurname.value = params[1];
 				document.wifisection.wificurpassword.value = params[2];
 				document.wifisection.wifimac.value = params[3];
 				document.wifisection.wificurchannel.value = Number( params[4] );
 
+				ClickOpmode( opmode );
 				did_wifi_get_config = true;
 			} );
 		}
