@@ -11,9 +11,6 @@
 #include "ws2812_i2s.h"
 
 #define PORT 7777
-#define SERVER_TIMEOUT 1500
-#define MAX_CONNS 5
-#define MAX_FRAME 2000
 
 #define procTaskPrio        0
 #define procTaskQueueLen    1
@@ -22,6 +19,7 @@ static volatile os_timer_t some_timer;
 static struct espconn *pUdpServer;
 uint8_t last_leds[512*3];
 int last_led_count;
+
 void user_rf_pre_init(void)
 {
 	//nothing.
@@ -56,8 +54,6 @@ procTask(os_event_t *events)
 
 		int stat = wifi_station_get_connect_status();
 
-//		printf( "STAT: %d\n", stat );
-
 		if( stat == STATION_WRONG_PASSWORD || stat == STATION_NO_AP_FOUND || stat == STATION_CONNECT_FAIL )
 		{
 			wifi_set_opmode_current( 2 );
@@ -86,11 +82,7 @@ static void ICACHE_FLASH_ATTR
  myTimer(void *arg)
 {
 	CSTick( 1 );
-
 	uart0_sendStr(".");
-//	printf( "%d\n",underrunCnt );
-//	uint8_t ledout[] = { 0x00, 0xff, 0xaa, 0x00, 0xff, 0xaa, };
-//	ws2812_push( ledout, 6 );
 }
 
 
@@ -99,10 +91,9 @@ static void ICACHE_FLASH_ATTR
 udpserver_recv(void *arg, char *pusrdata, unsigned short len)
 {
 	struct espconn *pespconn = (struct espconn *)arg;
-//	uint8_t buffer[MAX_FRAME];
 
-//	uint8_t ledout[] = { 0x00, 0xff, 0xaa, 0x00, 0xff, 0xaa, };
 	uart0_sendStr("X");
+
 	ws2812_push( pusrdata+3, len-3 );
 
 	len -= 3;
@@ -133,15 +124,6 @@ void user_init(void)
 
 
 	CSPreInit();
-/*
-	struct station_config stationConf;
-	wifi_set_opmode( 1 ); //We broadcast our ESSID, wait for peopel to join.
-	os_memcpy(&stationConf.ssid, "xxx", ets_strlen( "xxx" ) + 1);
-	os_memcpy(&stationConf.password, "yyy", ets_strlen( "yyy" ) + 1);
-
-	wifi_set_opmode( 1 );
-	wifi_station_set_config(&stationConf);
-	wifi_station_connect();**/
 
     pUdpServer = (struct espconn *)os_zalloc(sizeof(struct espconn));
 	ets_memset( pUdpServer, 0, sizeof( struct espconn ) );
@@ -151,8 +133,6 @@ void user_init(void)
 	pUdpServer->proto.udp->local_port = 7777;
 	espconn_regist_recvcb(pUdpServer, udpserver_recv);
 
-/*	wifi_station_dhcpc_start();
-*/
 	if( espconn_create( pUdpServer ) )
 	{
 		while(1) { uart0_sendStr( "\r\nFAULT\r\n" ); }
@@ -169,6 +149,9 @@ void user_init(void)
 	os_timer_arm(&some_timer, 100, 1);
 
 	ws2812_init();
+
+	uint8_t ledout[] = { 0x00, 0xff, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00 };
+	ws2812_push( ledout, sizeof( ledout ) );
 
 	system_os_post(procTaskPrio, 0, 0 );
 }
