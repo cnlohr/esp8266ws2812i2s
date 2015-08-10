@@ -1,6 +1,6 @@
 #ESP8266 I2S WS2812 Driver 
 
-For more reliable WS2812 driving.
+For more reliable WS2812 driving... If you want to watch a video about this project, click the video link below.
 
 [![Youtube: Using I2S on the ESP8266 to drive WS2812Bs](http://img.youtube.com/vi/6zqGwxqJQnw/0.jpg)](http://www.youtube.com/watch?v=6zqGwxqJQnw)
 
