@@ -1,3 +1,5 @@
+//Copyright 2015 <>< Charles Lohr, see LICENSE file.
+
 #include <commonservices.h>
 
 extern uint8_t last_leds[512*3];
