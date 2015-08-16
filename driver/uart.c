@@ -11,6 +11,7 @@
  *     2014/3/12, v1.0 create this file.
  *     2015/1/29, Various changes to the way in which bytes are received.
 *******************************************************************************/
+#include <c_types.h>
 #include <osapi.h>
 #include <ets_sys.h>
 #include <driver/uart.h>
