@@ -26,3 +26,20 @@ Unfortunately this does mean it takes up 4x the space in RAM to DMA the data... 
 
 Unfortunately the I2S Output pin is the same as RX1 (pin 25), which means if you are programming via the UART, it'll need to be unplugged any time you're testing.  The positive side of this is that it is a pin that is exposed on most ESP8266 breakout boards.
 
+## Memory layout:
+
+We use a bit of a modified take on the old memory layout since, while we support OTA upgrades, we do so in a different way than the normal way. Not that HTTP is limited on parts with <1M, and OTA flashing is not supported at all on parts with <512kB.
+
+| Address | Size  | Name / Description            |
+| ------- |:-----:| ----------------------------- |
+| 00000h  | 64k   | 0x00000.bin, IRAM Code        | 
+| 10000h  | 180k  | Normally unused, HTTP may be here if signature found. Only used if you have < 1M part. |
+| 3C000h  | 4k    | May be used by web interface  |
+| 3D000h  | 4k    | our device configuration      |
+| 3E000h  | 8k    | May be used by ESP SDK.       |
+| 40000h  | 240k  | 0x40000.bin, Cached code.     |
+| 7C000h  | 8k    | May be used by ESP SDK.       |
+| 7E000h  | 8k    | May be WiFi configuration     |
+| 80000h  | 512k  | Scratchpad (Temp only!)       |
+| 100000h | 1M+   | HTTP data, 1M on W25Q16.  HTTP Used here if signature found.       |
+
