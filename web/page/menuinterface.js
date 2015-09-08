@@ -49,10 +49,10 @@ function init()
 {
 	$('#MainMenu > tbody:first-child').before( "\
 		<tr><td width=1> \
-		<input type=submit onclick=\"ShowHideEvent( 'SystemStatus' );\" value='System Status' id=SystemStatusClicker></td><td> \
+		<input type=submit onclick=\"ShowHideEvent( 'SystemStatus' ); SystemInfoTick();\" value='System Status' id=SystemStatusClicker></td><td> \
 		<div id=SystemStatus class='collapsible'> \
 		<table width=100% border=1><tr><td> \
-<div id=output> \n		</td></tr></table></div></td></tr>" );
+<div id=output></div><div id=systemsettings></div> \n		</td></tr></table></div></td></tr>" );
 
 	$('#MainMenu > tbody:last-child').after( "\
 		<tr><td width=1> \
@@ -132,6 +132,7 @@ function init()
 
 	KickWifiTicker();
 	GPIODataTickerStart();
+	InitSystemTicker();
 }
 
 window.addEventListener("load", init, false);
@@ -321,6 +322,49 @@ function MakeDragDrop( divname, callback )
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///Below here are mostly just events...
+
+var sysset = null;
+var snchanged = false;
+var sdchanged = false;
+
+function SysTickBack(req,data)
+{
+	var params = data.split( "\t" );
+	if( !snchanged ) $("#SystemName").prop( "value", params[3] );
+	if( !sdchanged ) $("#SystemDescription").prop( "value", params[4] );
+}
+
+function SystemInfoTick()
+{
+	if( IsTabOpen('SystemStatus') )
+	{
+		QueueOperation( "I", SysTickBack );
+		setTimeout( SystemInfoTick, 500 );
+	}
+	else
+	{
+		//Stop.
+	}
+}
+
+
+function InitSystemTicker()
+{
+	sysset = document.getElementById( "systemsettings" );
+	SystemInfoTick();
+	sysset.innerHTML = "<TABLE><TR><TD>System Name:</TD><TD><INPUT TYPE=TEXT ID='SystemName'></TD><TD><INPUT TYPE=SUBMIT VALUE=Change ONCLICK='QueueOperation(\"IN\" + document.getElementById(\"SystemName\").value ); snchanged = false;'></TD></TR>\
+		<TR><TD>System Description:</TD><TD><INPUT TYPE=TEXT ID='SystemDescription'></TD><TD><INPUT TYPE=SUBMIT VALUE=Change ONCLICK='QueueOperation(\"ID\" + document.getElementById(\"SystemDescription\").value ); sdchanged = false;'></TD></TR></TABLE>\
+		<INPUT TYPE=SUBMIT VALUE=\"Reset To Current\" ONCLICK='snchanged = false; sdchanged = false;'>\
+		<INPUT TYPE=SUBMIT VALUE=Save ONCLICK='QueueOperation(\"IS\"); snchanged = false; sdchanged = false;'>\
+		<INPUT TYPE=SUBMIT VALUE=Revert From Saved ONCLICK='QueueOperation(\"IL\"); snchanged = false; sdchanged = false;'>\
+		<INPUT TYPE=SUBMIT VALUE=Revert To Factory ONCLICK='if( confirm( \"Are you sure you want to revert to factory settings?\" ) ) QueueOperation(\"IR\");snchanged = false; sdchanged = false;'>\
+		<INPUT TYPE=SUBMIT VALUE=Reboot ONCLICK='QueueOperation(\"IB\"); snchanged = false; sdchanged = false;'>\
+";
+	$("#SystemName").on("input propertychange paste",function(){snchanged = true;});
+	$("#SystemDescription").on("input propertychange paste",function(){sdchanged = true;});
+}
+
+
 
 did_wifi_get_config = false;
 is_data_ticker_running = false;

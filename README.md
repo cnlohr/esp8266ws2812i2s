@@ -1,6 +1,6 @@
 #ESP8266 I2S WS2812 Driver 
 
-For more reliable WS2812 driving... If you want to watch a video about this project, click the video link below.
+For more reliable WS2812 driving... And a nifty websockets-based interface for the ESP8266.  If you want to watch a video about this project, click the video link below.
 
 [![Youtube: Using I2S on the ESP8266 to drive WS2812Bs](http://img.youtube.com/vi/6zqGwxqJQnw/0.jpg)](http://www.youtube.com/watch?v=6zqGwxqJQnw)
 
@@ -33,9 +33,8 @@ We use a bit of a modified take on the old memory layout since, while we support
 | Address | Size  | Name / Description            |
 | ------- |:-----:| ----------------------------- |
 | 00000h  | 64k   | 0x00000.bin, IRAM Code        | 
-| 10000h  | 180k  | Normally unused, HTTP may be here if signature found. Only used if you have < 1M part. |
-| 3C000h  | 4k    | May be used by web interface  |
-| 3D000h  | 4k    | our device configuration      |
+| 10000h  | 172k  | Normally unused, HTTP may be here if signature found. Only used if you have < 1M part. |
+| 3A000h  | 16k   | Device Configuration          |
 | 3E000h  | 8k    | May be used by ESP SDK.       |
 | 40000h  | 240k  | 0x40000.bin, Cached code.     |
 | 7C000h  | 8k    | May be used by ESP SDK.       |

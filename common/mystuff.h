@@ -17,15 +17,17 @@
 //XXX WARNING As of 1.3.0, "cansend" doesn't work.
 //the SDK seems to misbehave when trying to send without a full
 //response packet.
-
 #define SAFESEND
+
+
+#define HTONS(x) ((((uint16_t)(x))>>8)|(((x)&0xff)<<8))
 
 
 extern char generic_print_buffer[384];
 
 extern const char * enctypes[6];// = { "open", "wep", "wpa", "wpa2", "wpa_wpa2", 0 };
 
-#define printf( ... ) ets_sprintf( generic_print_buffer, __VA_ARGS__ );  uart0_sendStr( generic_print_buffer );
+#define printf( ... ) { ets_sprintf( generic_print_buffer, __VA_ARGS__ );  uart0_sendStr( generic_print_buffer ); }
 
 char tohex1( uint8_t i );
 int8_t fromhex1( char c ); //returns -1 if not hex char.
@@ -56,5 +58,10 @@ void ICACHE_FLASH_ATTR my_base64_encode(const unsigned char *data, size_t input_
 
 void ICACHE_FLASH_ATTR SafeMD5Update( MD5_CTX * md5ctx, uint8_t*from, uint32_t size1 );
 
+char * ICACHE_FLASH_ATTR strdup( const char * src );
+char * ICACHE_FLASH_ATTR strdupcaselower( const char * src );
+
+
+uint32_t ICACHE_FLASH_ATTR GetCurrentIP( );
 
 #endif

@@ -16,6 +16,9 @@
 #include <gpio.h>
 #include "flash_rewriter.h"
 
+static uint8_t printed_ip = 0;
+static uint8_t attached_to_mdns = 0;
+
 static struct espconn *pUdpServer;
 static struct espconn *pHTTPServer;
 struct espconn *pespconn;
@@ -23,7 +26,7 @@ uint16_t g_gpiooutputmask = 0;
 
 int ets_str2macaddr(void *, void *);
 
-static int need_to_switch_back_to_soft_ap = 0; //0 = no, 1 = will need to. 2 = do it now.
+int need_to_switch_opmode = 0; //0 = no, 1 = will need to. 2 = do it now.
 #define MAX_STATIONS 20
 struct totalscan_t
 {
@@ -39,8 +42,8 @@ static void ICACHE_FLASH_ATTR scandone(void *arg, STATUS status)
 	scaninfo *c = arg; 
 	struct bss_info *inf; 
 
-	if( need_to_switch_back_to_soft_ap == 1 )
-		need_to_switch_back_to_soft_ap = 2;
+	if( need_to_switch_opmode == 1 )
+		need_to_switch_opmode = 2;
 
 	printf("!%p\n",c->pbss);
 
@@ -164,7 +167,7 @@ int ICACHE_FLASH_ATTR issue_command(char * buffer, int retsize, char *pusrdata, 
 				//nr = place to write.
 				//siz = size to write.
 				//colon2 = data start.
-				if( colon2 && nr >= 524288)
+				if( colon2 && nr >= FLASH_PROTECTION_BOUNDARY)
 				{
 					colon2++;
 					int datlen = ((int)len - (colon2 - pusrdata))/2;
@@ -211,17 +214,52 @@ failfx:
 		flashchip->chip_size = 0x00080000;
 		return buffend - buffer;
 	}
-	case 'i': case 'I': 	//Respond with device info.
+	case 'i': case 'I': 	//Respond with device info or other general system things
 	{
-		buffend += ets_sprintf(buffend, "I" );
 		int i;
-		for( i = 0; i < 2 ;i++ )
+		switch( pusrdata[1] )
 		{
-			struct ip_info ipi;
-			wifi_get_ip_info( i, &ipi );
-			buffend += ets_sprintf(buffend, "\t"IPSTR, IP2STR(&ipi.ip) );
+		case 'b': case 'B': system_restart(); break;
+		case 's': case 'S': CSSettingsSave(); buffend += ets_sprintf(buffend, "IS\r\n" ); break;
+		case 'l': case 'L': CSSettingsLoad( 0 ); buffend += ets_sprintf(buffend, "IL\r\n" ); break;
+		case 'r': case 'R': CSSettingsLoad( 1 ); buffend += ets_sprintf(buffend, "IR\r\n" ); break;
+		case 'n': case 'N':   //Name
+			for( i = 0; i < sizeof( SETTINGS.DeviceName )-1; i++ )
+			{
+				char ci = pusrdata[i+2];
+				if( ci >= 33 && ci <= 'z' )
+					SETTINGS.DeviceName[i] = ci;
+				else
+					break;
+			}
+			SETTINGS.DeviceName[i] = 0;
+			buffend += ets_sprintf(buffend, "\r\n" );
+			return buffend - buffer;
+			break;
+		case 'd': case 'D':   //Description
+			for( i = 0; i < sizeof( SETTINGS.DeviceDescription )-1; i++ )
+			{
+				char ci = pusrdata[i+2];
+				if( ci >= 33 && ci <= 'z' )
+					SETTINGS.DeviceDescription[i] = ci;
+				else
+					break;
+			}
+			SETTINGS.DeviceDescription[i] = 0;
+			buffend += ets_sprintf(buffend, "\r\n" );
+			break;
+		default:
+			buffend += ets_sprintf(buffend, "I" );
+			int i;
+			for( i = 0; i < 2 ;i++ )
+			{
+				struct ip_info ipi;
+				wifi_get_ip_info( i, &ipi );
+				buffend += ets_sprintf(buffend, "\t"IPSTR, IP2STR(&ipi.ip) );
+			}
+			buffend += ets_sprintf(buffend, "\t%s", SETTINGS.DeviceName );
+			buffend += ets_sprintf(buffend, "\t%s", SETTINGS.DeviceDescription );
 		}
-		buffend += ets_sprintf(buffend, "\r\n" );
 		return buffend - buffer;
 	}
 	case 'w': case 'W':	// (W1:SSID:PASSWORD) (To connect) or (W2) to be own base station.  ...or WI, to get info... or WS to scan.
@@ -351,7 +389,7 @@ failfx:
 				}
 			}
 			break;
-		case 'I':
+		case 'I': case 'i':
 			{
 				char macmap[15];
 				int mode = wifi_get_opmode();
@@ -408,7 +446,7 @@ failfx:
 				if( wifi_get_opmode() == SOFTAP_MODE )
 				{
 					wifi_set_opmode_current( STATION_MODE );
-					need_to_switch_back_to_soft_ap = 1;
+					need_to_switch_opmode = 1;
 				}
 
 				r = wifi_station_scan(&sc, scandone );
@@ -541,6 +579,7 @@ void ICACHE_FLASH_ATTR CSPreInit()
 	}
 }
 
+
 void ICACHE_FLASH_ATTR CSInit()
 {
     pUdpServer = (struct espconn *)os_zalloc(sizeof(struct espconn));
@@ -550,6 +589,8 @@ void ICACHE_FLASH_ATTR CSInit()
 	pUdpServer->proto.udp->local_port = 7878;
 	espconn_regist_recvcb(pUdpServer, issue_command_udp);
 	espconn_create( pUdpServer );
+
+	SetupMDNS();
 
 	pHTTPServer = (struct espconn *)os_zalloc(sizeof(struct espconn));
 	ets_memset( pHTTPServer, 0, sizeof( struct espconn ) );
@@ -565,7 +606,9 @@ void ICACHE_FLASH_ATTR CSInit()
 
 void CSTick( int slowtick )
 {
+	static uint8_t done_first_slowtick = 0;
 	static uint8_t tick_flag = 0;
+	static uint8_t last_opmode = 0;
 
 	if( slowtick )
 	{
@@ -573,12 +616,17 @@ void CSTick( int slowtick )
 		return;
 	}
 
-	if(	need_to_switch_back_to_soft_ap == 2 )
+	int opm = wifi_get_opmode();
+	//Idle Event.
+	if( opm != last_opmode )
 	{
-		need_to_switch_back_to_soft_ap = 0;
-		EnterCritical();
-		wifi_set_opmode_current( SOFTAP_MODE );
-		ExitCritical();
+		last_opmode = opm;
+		CSConnectionChange();
+	}
+
+	if( !attached_to_mdns )
+	{
+		if( JoinGropMDNS() == 0 ) attached_to_mdns = 1;
 	}
 
 	HTTPTick(0);
@@ -588,8 +636,125 @@ void CSTick( int slowtick )
 	//pause, though.
 	if( tick_flag )
 	{
+		uart0_sendStr(".");
+
+
+		if( opm == 1 )
+		{
+			struct station_config wcfg;
+			struct ip_info ipi;
+			int stat = wifi_station_get_connect_status();
+
+			if( stat == STATION_WRONG_PASSWORD || stat == STATION_NO_AP_FOUND || stat == STATION_CONNECT_FAIL )
+			{
+				wifi_station_disconnect();
+				need_to_switch_opmode = 2;
+				wifi_set_opmode_current( SOFTAP_MODE );
+				printf( "Connection failed: %d\n", stat );
+			}
+
+			if( stat == STATION_GOT_IP && !printed_ip )
+			{
+				wifi_station_get_config( &wcfg );
+				wifi_get_ip_info(0, &ipi);
+				printf( "STAT: %d\n", stat );
+				printf( "IP: %d.%d.%d.%d\n", (ipi.ip.addr>>0)&0xff,(ipi.ip.addr>>8)&0xff,(ipi.ip.addr>>16)&0xff,(ipi.ip.addr>>24)&0xff );
+				printf( "NM: %d.%d.%d.%d\n", (ipi.netmask.addr>>0)&0xff,(ipi.netmask.addr>>8)&0xff,(ipi.netmask.addr>>16)&0xff,(ipi.netmask.addr>>24)&0xff );
+				printf( "GW: %d.%d.%d.%d\n", (ipi.gw.addr>>0)&0xff,(ipi.gw.addr>>8)&0xff,(ipi.gw.addr>>16)&0xff,(ipi.gw.addr>>24)&0xff );
+				printf( "WCFG: /%s/%s/\n", wcfg.ssid, wcfg.password );
+				printed_ip = 1;
+				CSConnectionChange();
+			}
+		}
+
 		tick_flag = 0;
 		HTTPTick(1);
+		if(	need_to_switch_opmode == 2 )
+		{
+			need_to_switch_opmode = 3;
+			EnterCritical();
+			wifi_set_opmode_current( SOFTAP_MODE );
+			struct softap_config sc;
+			wifi_softap_get_config(&sc);
+			printf( "SoftAP mode: \"%s\":\"%s\" @ %d\n", sc.ssid, sc.password, wifi_get_channel() );
+			ExitCritical();
+		}
+		else if( need_to_switch_opmode == 3 )
+		{
+			need_to_switch_opmode = 0;
+			EnterCritical();
+			printf( "DHCP Start\n" );
+			wifi_softap_dhcps_start();
+			ExitCritical();
+			wifi_station_connect();
+		}
+		else if( need_to_switch_opmode == 4 )
+		{
+			need_to_switch_opmode = 0;
+			EnterCritical();
+			wifi_set_opmode( 1 );
+			wifi_station_connect();
+			ExitCritical();
+		}
+
+		//XXX TODO
+		if( !done_first_slowtick )
+		{
+			done_first_slowtick = 1;
+			printf( "First: %d\n", wifi_get_opmode_default() );
+			if( wifi_get_opmode_default() == 1 )
+			{
+				struct station_config sc;
+				wifi_station_get_config(&sc);
+				printf( "Station mode: \"%s\":\"%s\" (bssid_set:%d)\n", sc.ssid, sc.password, sc.bssid_set );
+				if( sc.ssid[0] == 0 && !sc.bssid_set )
+				{
+				}
+				else
+				{
+					wifi_set_opmode_current( 1 );
+				}
+			}
+		}
 	}
 }
+
+void ICACHE_FLASH_ATTR CSConnectionChange()
+{
+	attached_to_mdns = 0;
+}
+
+
+
+void ICACHE_FLASH_ATTR CSSettingsLoad(int force_reinit)
+{
+	ets_memset( &SETTINGS, 0, sizeof( SETTINGS) );
+	system_param_load( 0x3A, 0, &SETTINGS, sizeof( SETTINGS ) );
+	if( SETTINGS.settings_key != 0xAF || force_reinit)
+	{
+		ets_memset( &SETTINGS, 0, sizeof( SETTINGS ) );
+
+		uint8_t sysmac[6];
+		printf( "Settings uninitialized.  Initializing.\n" );
+		if( !wifi_get_macaddr( 0, sysmac ) );
+			wifi_get_macaddr( 1, sysmac );
+
+		ets_sprintf( SETTINGS.DeviceName, "ESP_%02X%02X%02X", sysmac[3], sysmac[4], sysmac[5] );
+		ets_sprintf( SETTINGS.DeviceDescription, "Default" );
+		printf( "Initialized Name: %s\n", SETTINGS.DeviceName );
+
+		CSSettingsSave();
+		system_restore();
+	}
+
+	printf( "Settings Loaded: %s / %s\n", SETTINGS.DeviceName, SETTINGS.DeviceDescription );
+}
+
+void ICACHE_FLASH_ATTR CSSettingsSave()
+{
+	SETTINGS.settings_key = 0xAF;
+	system_param_save_with_protect( 0x3A, &SETTINGS, sizeof( SETTINGS ) );
+}
+
+struct CommonSettings SETTINGS;
 

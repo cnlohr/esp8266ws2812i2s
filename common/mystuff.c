@@ -3,6 +3,8 @@
 // ColorChord License.  You Choose.
 
 #include "mystuff.h"
+#include <c_types.h>
+#include <mem.h>
 
 const char * enctypes[6] = { "open", "wep", "wpa", "wpa2", "wpa_wpa2", 0 };
 
@@ -199,7 +201,6 @@ void ICACHE_FLASH_ATTR SafeMD5Update( MD5_CTX * md5ctx, uint8_t*from, uint32_t s
 {
 	char  __attribute__ ((aligned (32))) buffer[32];
 
-
 	while( size1 > 32 )
 	{
 		ets_memcpy( buffer, from, 32 );
@@ -209,5 +210,42 @@ void ICACHE_FLASH_ATTR SafeMD5Update( MD5_CTX * md5ctx, uint8_t*from, uint32_t s
 	}
 	ets_memcpy( buffer, from, 32 );
 	MD5Update( md5ctx, buffer, size1 );
+}
+
+char * ICACHE_FLASH_ATTR strdup( const char * src )
+{
+	int len = ets_strlen( src );
+	char * ret = (char*)os_malloc( len+1 );
+	ets_memcpy( ret, src, len+1 );
+	return ret;
+}
+
+char * ICACHE_FLASH_ATTR strdupcaselower( const char * src )
+{
+	int i;
+	int len = ets_strlen( src );
+	char * ret = (char*)os_malloc( len+1 );
+	for( i = 0; i < len+1; i++ )
+	{
+		if( src[i] >= 'A' && src[i] <= 'Z' )
+			ret[i] = src[i] - 'A' + 'a';
+		else
+			ret[i] = src[i];
+	}
+	return ret;
+}
+
+uint32_t ICACHE_FLASH_ATTR GetCurrentIP( )
+{
+	struct ip_info sta_ip;
+	wifi_get_ip_info(STATION_IF, &sta_ip);
+	if( sta_ip.ip.addr == 0 )
+	{
+		wifi_get_ip_info(SOFTAP_IF, &sta_ip);
+	}
+	if( sta_ip.ip.addr != 0 )
+		return sta_ip.ip.addr;
+	else
+		return 0;
 }
 

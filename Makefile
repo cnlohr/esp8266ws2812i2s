@@ -10,6 +10,7 @@ SRCS:=driver/uart.c \
 	common/http.c \
 	common/commonservices.c \
 	common/http_custom.c \
+	common/mdns.c \
 	common/mfs.c \
 	user/custom_commands.c \
 	user/ws2812_i2s.c \
