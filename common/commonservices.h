@@ -46,8 +46,28 @@ void ExitCritical();
 int ICACHE_FLASH_ATTR CustomCommand(char * buffer, int retsize, char *pusrdata, unsigned short len);
 
 //Other utility stuff
-extern int need_to_switch_opmode; //0 = no, 1 = will need to after a scan. 2 = do it now. 3 = switched, need to start dhcps.  4 = need to go back into station mode.
+extern int need_to_switch_opmode; //0 = no, 1 = will need to after a scan. 2 = do it now. 3 = need to go back into station mode.
 
+
+
+//Browse mechanism.
+#define BROWSE_CLIENTS_LIST_SIZE 20
+
+struct BrowseClient
+{
+	uint32_t ip;
+	char    service[11];
+	char	devicename[11];
+	char    description[17];
+};
+
+extern struct BrowseClient FoundBrowseClients[BROWSE_CLIENTS_LIST_SIZE];
+
+//Service name can be the title of the service, or can be "esp8266" to list all ESP8266's.
+void ICACHE_FLASH_ATTR BrowseForService( const char * servicename );
+
+//Set the service name for this device.  No more than 10 chars allowed.
+void ICACHE_FLASH_ATTR SetServiceName( const char * myservice );
 
 #endif
 

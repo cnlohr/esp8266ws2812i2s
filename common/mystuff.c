@@ -82,6 +82,14 @@ int8_t fromhex1( char c )
 		return -1;
 }
 
+void  NixNewline( char * str )
+{
+	if( !str ) return;
+	int sl = ets_strlen( str );
+	if( sl > 1 && str[sl-1] == '\n' ) str[sl-1] = 0;
+	if( sl > 2 && str[sl-2] == '\r' ) str[sl-2] = 0;
+}
+
 
 
 void ICACHE_FLASH_ATTR  EndTCPWrite( struct 	espconn * conn )

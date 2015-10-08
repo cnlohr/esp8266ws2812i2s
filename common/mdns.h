@@ -15,8 +15,10 @@ int ICACHE_FLASH_ATTR JoinGropMDNS(); //returns nonzero on failure.
 //The first name is automatically inserted to be the device name.
 void ICACHE_FLASH_ATTR MDNSAddName( const char * ToDup );  
 
+//Add service names here, I.e. _http._tcp.  or "esp8266" this will make us respond when we get
+//those kinds of requests.
+//
 //All data is dupped
-//I.e. _http._tcp 
 void ICACHE_FLASH_ATTR AddMDNSService( const char * ServiceName, const char * Text, int port );
 
 //Reset all services and matches.

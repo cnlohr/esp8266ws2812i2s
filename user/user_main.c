@@ -44,17 +44,12 @@ os_event_t    procTaskQueue[procTaskQueueLen];
 
 static void ICACHE_FLASH_ATTR procTask(os_event_t *events)
 {
-	system_os_post(procTaskPrio, 0, 0 );
-
 	CSTick( 0 );
-
-	//XXX: Should we be checking this?
-	//	if( events->sig == 0 && events->par == 0 )
+	system_os_post(procTaskPrio, 0, 0 );
 }
 
 //Timer event.
-static void ICACHE_FLASH_ATTR
- myTimer(void *arg)
+static void ICACHE_FLASH_ATTR myTimer(void *arg)
 {
 	CSTick( 1 );
 }
@@ -84,49 +79,19 @@ void ICACHE_FLASH_ATTR charrx( uint8_t c )
 	//Called from UART.
 }
 
-/* Espressif's MDNS example... It doesn't have enough options for me.
-int ICACHE_FLASH_ATTR StartMDNS()
-{
-
-	struct ip_info sta_ip;
-	wifi_get_ip_info(STATION_IF, &sta_ip);
-	if( sta_ip.ip.addr == 0 )
-	{
-		wifi_get_ip_info(SOFTAP_IF, &sta_ip);
-	}
-	if( sta_ip.ip.addr == 0 )
-	{
-		return -1;
-	}
-
-	struct mdns_info *info = (struct mdns_info *)os_zalloc(sizeof(struct mdns_info));
-	info->host_name = (char *) "test";
-	info->ipAddr = sta_ip.ip.addr;
-	info->server_name = (char *) "http";
-	info->server_port = 80;
-
-	espconn_mdns_init(info);
-	espconn_mdns_server_register();
-	espconn_mdns_enable();
-	return 0;
-}
-*/
-
-
 void user_init(void)
 {
 	uart_init(BIT_RATE_115200, BIT_RATE_115200);
 
 	uart0_sendStr("\r\nesp8266 ws2812 driver\r\n");
 
-	CSSettingsLoad( 0 );
-
-	if( wifi_get_opmode() == 1 ) need_to_switch_opmode = 4;
-	wifi_set_opmode_current( SOFTAP_MODE );
-
+//	int opm = wifi_get_opmode();
+//	if( opm == 1 ) need_to_switch_opmode = 120;
+//	wifi_set_opmode_current(2);
 //Uncomment this to force a system restore.
 //	system_restore();
 
+	CSSettingsLoad( 0 );
 	CSPreInit();
 
     pUdpServer = (struct espconn *)os_zalloc(sizeof(struct espconn));
@@ -144,6 +109,7 @@ void user_init(void)
 
 	CSInit();
 
+	SetServiceName( "ws2812" );
 	AddMDNSName( "cn8266" );
 	AddMDNSName( "ws2812" );
 	AddMDNSService( "_http._tcp", "An ESP8266 Webserver", 80 );

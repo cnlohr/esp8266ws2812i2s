@@ -128,11 +128,13 @@ function init()
 	$(document).on('dragenter', donothing );
 
 	output = document.getElementById("output");
-	Ticker();
 
 	KickWifiTicker();
 	GPIODataTickerStart();
 	InitSystemTicker();
+
+	console.log( "Load complete.\n" );
+	Ticker();
 }
 
 window.addEventListener("load", init, false);
@@ -166,7 +168,8 @@ function onClose(evt)
 var msg = 0;
 var tickmessage = 0;
 var lasthz = 0;
-var time_since_hz = 0;
+var time_since_hz = 10; //Make it realize it was disconnected to begin with.
+
 function Ticker()
 {
 	setTimeout( Ticker, 1000 );
@@ -218,7 +221,11 @@ function onMessage(evt)
 	}
 	else
 	{
-		output.innerHTML = "<p>Messages: " + msg + "</p><p>RSSI: " + evt.data.substr(2) + "</p>";	
+		if( evt.data.length > 2 )
+		{
+			var wxresp = evt.data.substr(2).split("\t");
+			output.innerHTML = "<p>Messages: " + msg + "</p><p>RSSI: " + wxresp[0] + " / IP: " + ((wxresp.length>1)?HexToIP( wxresp[1] ):"") + "</p>";	
+		}
 	}
 
 
@@ -327,11 +334,53 @@ var sysset = null;
 var snchanged = false;
 var sdchanged = false;
 
+var lastpeerdata = "";
+
+function CallbackForPeers(req,data)
+{
+	if( data == lastpeerdata ) return;
+	lastpeerdata = data;
+	var lines = data.split( "\n" );
+	var searchcount = 0;
+	if( lines.length > 0 )
+	{
+		var line1 = lines[0].split( "\t" );
+		if( line1.length > 1 ) searchcount = Number( line1[1] );
+	}
+
+	var htm = "<TABLE BORDER=1 STYLE='width:150'><TR><TH>Address</TH><TH>Service</TH><TH>Name</TH><TH>Description</TH></TR>";
+	for( var i = 1; i < lines.length; i++ )
+	{
+		var elems = lines[i].split( "\t" );
+		if( elems.length < 4 ) continue;
+		IP = HexToIP( elems[0] );
+
+		htm += "<TR><TD><A HREF=http://" + IP + ">" + IP + "</A></TD><TD>" + elems[1] + "</TD><TD>" + elems[2] + "</TD><TD>" + elems[3] + "</TD></TR>";
+	}
+	htm += "</TABLE>";
+	if( searchcount == 0 )
+	{
+		htm += "<INPUT TYPE=SUBMIT VALUE=\"Initiate Search\" ONCLICK='QueueOperation(\"BS\");'>";
+	}
+
+	$("#peers").html( htm );
+}
+
 function SysTickBack(req,data)
 {
 	var params = data.split( "\t" );
-	if( !snchanged ) $("#SystemName").prop( "value", params[3] );
-	if( !sdchanged ) $("#SystemDescription").prop( "value", params[4] );
+	if( !snchanged )
+	{
+		$("#SystemName").prop( "value", params[3] );
+		$("#SystemName").removeClass( "unsaved-input");
+	}
+	if( !sdchanged )
+	{
+		$("#SystemDescription").prop( "value", params[4] );
+		$("#SystemDescription").removeClass( "unsaved-input");
+	}
+	
+	QueueOperation( "BL", CallbackForPeers );
 }
 
 function SystemInfoTick()
@@ -347,21 +396,33 @@ function SystemInfoTick()
 	}
 }
 
+function SystemChangesReset()
+{
+	snchanged = false;
+	sdchanged = false;
+}
+
+function SystemUncommittedChanges()
+{
+	if( sdchanged || snchanged ) return true;
+	else return false;
+}
 
 function InitSystemTicker()
 {
 	sysset = document.getElementById( "systemsettings" );
 	SystemInfoTick();
-	sysset.innerHTML = "<TABLE><TR><TD>System Name:</TD><TD><INPUT TYPE=TEXT ID='SystemName'></TD><TD><INPUT TYPE=SUBMIT VALUE=Change ONCLICK='QueueOperation(\"IN\" + document.getElementById(\"SystemName\").value ); snchanged = false;'></TD></TR>\
-		<TR><TD>System Description:</TD><TD><INPUT TYPE=TEXT ID='SystemDescription'></TD><TD><INPUT TYPE=SUBMIT VALUE=Change ONCLICK='QueueOperation(\"ID\" + document.getElementById(\"SystemDescription\").value ); sdchanged = false;'></TD></TR></TABLE>\
-		<INPUT TYPE=SUBMIT VALUE=\"Reset To Current\" ONCLICK='snchanged = false; sdchanged = false;'>\
-		<INPUT TYPE=SUBMIT VALUE=Save ONCLICK='QueueOperation(\"IS\"); snchanged = false; sdchanged = false;'>\
-		<INPUT TYPE=SUBMIT VALUE=Revert From Saved ONCLICK='QueueOperation(\"IL\"); snchanged = false; sdchanged = false;'>\
-		<INPUT TYPE=SUBMIT VALUE=Revert To Factory ONCLICK='if( confirm( \"Are you sure you want to revert to factory settings?\" ) ) QueueOperation(\"IR\");snchanged = false; sdchanged = false;'>\
-		<INPUT TYPE=SUBMIT VALUE=Reboot ONCLICK='QueueOperation(\"IB\"); snchanged = false; sdchanged = false;'>\
-";
-	$("#SystemName").on("input propertychange paste",function(){snchanged = true;});
-	$("#SystemDescription").on("input propertychange paste",function(){sdchanged = true;});
+	sysset.innerHTML = "<TABLE style='width:150'><TR><TD>System Name:</TD><TD><INPUT TYPE=TEXT ID='SystemName' maxlength=10></TD><TD><INPUT TYPE=SUBMIT VALUE=Change ONCLICK='QueueOperation(\"IN\" + document.getElementById(\"SystemName\").value ); snchanged = false;'></TD></TR>\
+		<TR><TD>System Description:</TD><TD><INPUT TYPE=TEXT ID='SystemDescription' maxlength=16></TD><TD><INPUT TYPE=SUBMIT VALUE=Change ONCLICK='QueueOperation(\"ID\" + document.getElementById(\"SystemDescription\").value ); sdchanged = false;'></TD></TR></TABLE>\
+		<INPUT TYPE=SUBMIT VALUE=\"Reset To Current\" ONCLICK='SystemChangesReset();'>\
+		<INPUT TYPE=SUBMIT VALUE=Save ONCLICK='if( SystemUncommittedChanges() ) { IssueSystemMessage( \"Cannot save.  Uncommitted changes.\"); return; } QueueOperation(\"IS\", function() { IssueSystemMessage( \"Saving\" ); } ); SystemChangesReset(); '>\
+		<INPUT TYPE=SUBMIT VALUE=\"Revert From Saved\" ONCLICK='QueueOperation(\"IL\", function() { IssueSystemMessage( \"Reverting.\" ); } ); SystemChangesReset();'>\
+		<INPUT TYPE=SUBMIT VALUE=\"Revert To Factory\" ONCLICK='if( confirm( \"Are you sure you want to revert to factory settings?\" ) ) QueueOperation(\"IR\"); SystemChangesReset();'>\
+		<INPUT TYPE=SUBMIT VALUE=Reboot ONCLICK='QueueOperation(\"IB\");'>\
+		<P>Search for others:</P>\
+		<DIV id=peers></DIV>";
+	$("#SystemName").on("input propertychange paste",function(){snchanged = true; $("#SystemName").addClass( "unsaved-input"); });  
+	$("#SystemDescription").on("input propertychange paste",function(){sdchanged = true;$("#SystemDescription").addClass( "unsaved-input"); });
 }
 
 
@@ -729,6 +790,15 @@ function tohex8( c )
 	return hex.length == 1 ? "0" + hex : hex;
 }
 
+
+function HexToIP( hexstr )
+{
+	if( !hexstr ) return "";
+	return parseInt( hexstr.substr( 6, 2 ), 16 ) + "." +
+		parseInt( hexstr.substr( 4, 2 ), 16 ) + "." +
+		parseInt( hexstr.substr( 2, 2 ), 16 ) + "." +
+		parseInt( hexstr.substr( 0, 2 ), 16 );
+}
 
 function ContinueSystemFlash( fsrd, flashresponse, pushop )
 {

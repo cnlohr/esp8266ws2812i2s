@@ -22,6 +22,8 @@
 
 #define HTONS(x) ((((uint16_t)(x))>>8)|(((x)&0xff)<<8))
 
+#define IP4_to_uint32(x) (((uint32_t)x[3]<<24)|((uint32_t)x[2]<<16)|((uint32_t)x[1]<<8)|x[0])
+#define uint32_to_IP4(x,y) {y[0] = (uint8_t)(x); y[1] = (uint8_t)((x)>>8); y[2] = (uint8_t)((x)>>16); y[3] = (uint8_t)((x)>>24);}
 
 extern char generic_print_buffer[384];
 
@@ -35,12 +37,15 @@ int8_t fromhex1( char c ); //returns -1 if not hex char.
 int32  my_atoi( const char * in );
 void  Uint32To10Str( char * out, uint32 dat );
 
+void  NixNewline( char * str ); //If there's a newline at the end of this string, make it null.
+
 //For holding TX packet buffers
 extern char generic_buffer[1500];
 extern char * generic_ptr;
 int8_t ICACHE_FLASH_ATTR  TCPCanSend( struct espconn * conn, int size );
 int8_t ICACHE_FLASH_ATTR  TCPDoneSend( struct espconn * conn );
 void  ICACHE_FLASH_ATTR  EndTCPWrite( struct espconn * conn );
+
 
 #define PushByte( c ) { *(generic_ptr++) = c; }
 

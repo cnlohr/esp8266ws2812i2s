@@ -21,6 +21,8 @@ static char * MDNSServices[MAX_MDNS_SERVICES];
 static char * MDNSServiceTexts[MAX_MDNS_SERVICES];
 static uint16_t MDNSServicePorts[MAX_MDNS_SERVICES];
 
+static char MDNSSearchName[MAX_MDNS_PATH];
+
 
 void ICACHE_FLASH_ATTR AddMDNSService( const char * ServiceName, const char * Text, int port )
 {
@@ -171,12 +173,14 @@ static void ICACHE_FLASH_ATTR SendOurARecord( uint8_t * namestartptr, int xactio
 	obptr += stlen+1;
 	*(obptr++) = 0;
 	*(obptr++) = 0x00; *(obptr++) = 0x01; //A record
-	*(obptr++) = 0x00; *(obptr++) = 0x01; //Don't Flush cache + in ptr.
+	*(obptr++) = 0x80; *(obptr++) = 0x01; //Flush cache + in ptr.
 	*(obptr++) = 0x00; *(obptr++) = 0x00; //TTL
-	*(obptr++) = 0x00; *(obptr++) = 10;   //very short. (10 seconds)
+	*(obptr++) = 0x00; *(obptr++) = 120;   //very short. (120 seconds)
 	*(obptr++) = 0x00; *(obptr++) = 0x04; //Size 4 (IP)
 	ets_memcpy( obptr, pMDNSServer->proto.udp->local_ip, 4 );
 	obptr+=4;
+	uint32_t md = MDNS_BRD;
+	ets_memcpy( pMDNSServer->proto.udp->remote_ip, &md, 4 );
 	espconn_sent( pMDNSServer, outbuff, obptr - outbuff );
 }
 
@@ -350,14 +354,8 @@ static void ICACHE_FLASH_ATTR got_mdns_packet(void *arg, char *pusrdata, unsigne
 	if( flags & 0x8000 )
 	{
 		//Response
-		for( i = 0; i < answers; i++ )
-		{
-			//Work our way through.
-			dataptr = ParseMDNSPath( dataptr, path, &stlen );
-			if( !dataptr ) return;
 
-			//TODO: Have an MDNS Client.
-		}
+		//Unused; MDNS does not fit the browse model we want to use.
 	}
 	else
 	{
@@ -403,7 +401,7 @@ static void ICACHE_FLASH_ATTR got_mdns_packet(void *arg, char *pusrdata, unsigne
 			for( i = 0; i < MAX_MDNS_NAMES; i++ )
 			{
 				//Handle [hostname].local, or [hostname].[service].local
-				if( MDNSNames[i] && dotlen && ets_strncmp( MDNSNames[i], path, dotlen ) == 0 ) 
+				if( MDNSNames[i] && dotlen && ets_strncmp( MDNSNames[i], path, dotlen ) == 0 && dotlen == ets_strlen( MDNSNames[i] )) 
 				{
 					found = 1;
 					if( record_type == 0x0001 ) //A Name Lookup.

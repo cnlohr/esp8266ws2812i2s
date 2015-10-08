@@ -24,6 +24,14 @@ static struct espconn *pHTTPServer;
 struct espconn *pespconn;
 uint16_t g_gpiooutputmask = 0;
 
+struct BrowseClient FoundBrowseClients[BROWSE_CLIENTS_LIST_SIZE];
+static char BrowsingService[11];
+static char ServiceName[17];
+static int  BrowseRequestTimeout = 0;
+static int  BrowseSearchCount = 0; //Number of times to search for other ESPs when searching.
+static uint32_t BrowseRespond = 0;
+static uint16_t BrowseRespondPort = 0;
+
 int ets_str2macaddr(void *, void *);
 
 int need_to_switch_opmode = 0; //0 = no, 1 = will need to. 2 = do it now.
@@ -45,18 +53,15 @@ static void ICACHE_FLASH_ATTR scandone(void *arg, STATUS status)
 	if( need_to_switch_opmode == 1 )
 		need_to_switch_opmode = 2;
 
-	printf("!%p\n",c->pbss);
-
 	if (!c->pbss) {
 		scanplace = -1;
 		return;
 	}
-//		printf("!%s\n",inf->ssid);
+
 	STAILQ_FOREACH(inf, c->pbss, next) {
 		printf( "%s\n", inf->ssid );
 		ets_memcpy( totalscan[scanplace].name, inf->ssid, 32 );
 		ets_sprintf( totalscan[scanplace].mac, MACSTR, MAC2STR( inf->bssid ) );
-		//ets_memcpy( totalscan[scanplace].mac, "not implemented", 16 );
 		totalscan[scanplace].rssi = inf->rssi;
 		totalscan[scanplace].channel = inf->channel;
 		totalscan[scanplace].encryption = inf->authmode;
@@ -67,6 +72,53 @@ static void ICACHE_FLASH_ATTR scandone(void *arg, STATUS status)
 }
 
 
+//Service name can be the title of the service, or can be "esp8266" to list all ESP8266's.
+void ICACHE_FLASH_ATTR BrowseForService( const char * servicename )
+{
+	int sl = ets_strlen( servicename );
+	if( sl > 10 ) sl = 10;
+
+	ets_memcpy( BrowsingService, servicename, sl );
+	BrowsingService[sl] = 0;
+
+	for( sl = 0; sl < BROWSE_CLIENTS_LIST_SIZE; sl++ )
+	{
+		FoundBrowseClients[sl].ip = 0;
+	}
+
+	BrowseRequestTimeout = 1;
+	BrowseSearchCount = 5;
+}
+
+void ICACHE_FLASH_ATTR SetServiceName( const char * myservice )
+{
+	int sl = ets_strlen( myservice );
+	if( sl > 10 ) sl = 10;
+
+	ets_memcpy( ServiceName, myservice, sl );
+	ServiceName[sl] = 0;
+}
+
+
+static void ICACHE_FLASH_ATTR EmitWhoAmINow( )
+{
+	char etsend[64];
+	ets_sprintf( etsend, "BR%s\t%s\t%s", ServiceName, SETTINGS.DeviceName, SETTINGS.DeviceDescription );
+	uint32_to_IP4(BrowseRespond,pUdpServer->proto.udp->remote_ip);
+	pUdpServer->proto.udp->remote_port = BrowseRespondPort;
+	espconn_sent( (struct espconn *)pUdpServer, etsend, ets_strlen( etsend ) );
+	BrowseRespond = 0;
+}
+
+static void ICACHE_FLASH_ATTR EmitBrowseNow( )
+{
+	char etsend[32];
+	ets_sprintf( etsend, "BQ%s", BrowsingService );
+	uint32_to_IP4( ((uint32_t)0xffffffff), pUdpServer->proto.udp->remote_ip );
+	pUdpServer->proto.udp->remote_port = 7878;
+	espconn_sent( (struct espconn *)pUdpServer, etsend, ets_strlen( etsend ) );
+}
+
 
 int ICACHE_FLASH_ATTR issue_command(char * buffer, int retsize, char *pusrdata, unsigned short len)
 {
@@ -75,7 +127,114 @@ int ICACHE_FLASH_ATTR issue_command(char * buffer, int retsize, char *pusrdata, 
 
 	switch( pusrdata[0] )
 	{
-	case 'e': case 'E': 	//Echo
+	case 'b': case 'B': //Browse request
+		//Format is
+		//User:
+		//	BS[service name]: Start seearch for service
+		//	BL: List all services that have been found.
+		//Internally:
+		//   BQ[service name], service name may not exist for wild card.
+		//     will respond with BR if service name matches, or wildcard, at a random point in the future.
+		//
+		//   BR[service name]\t[device name]\t[device description]
+		if( len > 1 )
+		{
+			char * srv = (len>2)?&pusrdata[2]:0;
+			char * nam = (srv)?((char *)ets_strstr( (char*)(srv+1), "\t" )):0;
+			char * des = (nam)?((char *)ets_strstr( (char*)(nam+1), "\t" )):0;
+			if( nam ) { *(nam) = 0; nam++; }
+			if( des ) { *(des) = 0; des++; } //Properly null terminate, and advance beyond the \t.
+			NixNewline( srv );
+			NixNewline( nam );
+			NixNewline( des );
+			int fromip = IP4_to_uint32(pUdpServer->proto.udp->remote_ip);
+
+			switch( pusrdata[1] )
+			{
+			case 'q': case 'Q': //Probe
+				//Make sure it's either a wildcard, to our service or to us.
+				if( !srv || strcmp( srv, ServiceName ) == 0 || strcmp( srv, SETTINGS.DeviceName ) == 0 )
+				{
+					//Respond at a random time in the future (to prevent congestion)
+
+					//Unless there's already a pending thing, then respond to that client.
+					if( BrowseRespond )
+					{
+						EmitWhoAmINow();
+					}
+
+					BrowseRespond = fromip;
+					BrowseRespondPort = pUdpServer->proto.udp->remote_port;
+				}	//Do not respond to sender here.
+				break;
+			case 'r': case 'R': //Response
+				if( srv && nam && des )
+				{
+					//Find in list.
+					int i;
+					int last_empty = -1;
+					for( i = 0; i < BROWSE_CLIENTS_LIST_SIZE; i++ )
+					{
+						uint32_t ip = FoundBrowseClients[i].ip;
+						if( last_empty == -1 && ip == 0 ) last_empty = i;
+						if( fromip == ip ) break;
+					}
+
+					if( i == BROWSE_CLIENTS_LIST_SIZE )
+					{
+						//Not in list.
+						i = last_empty;
+					}
+
+					//Update this entry.
+					if( i != -1 )
+					{
+						struct BrowseClient * bc = &FoundBrowseClients[i];
+						int sl = ets_strlen( srv );
+						int nl = ets_strlen( nam );
+						int dl = ets_strlen( des );
+						if( sl > 10 ) sl = 10;
+						if( nl > 10 ) nl = 10;
+						if( dl > 16 ) dl = 16;
+						ets_memcpy( bc->service, srv, sl ); bc->service[sl] = 0;
+						ets_memcpy( bc->devicename, nam, nl ); bc->devicename[nl] = 0;
+						ets_memcpy( bc->description, des, dl ); bc->description[dl] = 0;
+						bc->ip = fromip;
+					}
+				}  //Do not respond.
+				break;
+			case 's': case 'S':
+				BrowseForService( nam?nam:"" );
+				buffend += ets_sprintf(buffend, "BS\r\n" );
+				break;
+			case 'l': case 'L':
+			{
+				int i;
+				int found = 0;
+				for( i = 0; i < BROWSE_CLIENTS_LIST_SIZE; i++ )
+				{
+					if( FoundBrowseClients[i].ip ) found++;
+				}
+
+				buffend += ets_sprintf(buffend, "BL%d\t%d\n", found, BrowseSearchCount );
+
+				for( i = 0; i < BROWSE_CLIENTS_LIST_SIZE; i++ )
+				{
+					if( FoundBrowseClients[i].ip )
+					{
+						struct BrowseClient * bc = &FoundBrowseClients[i];
+						buffend += ets_sprintf(buffend, "%08x\t%s\t%s\t%s\n",
+							bc->ip, bc->service, bc->devicename, bc->description );
+					}
+				}
+				break;
+			}
+		}
+		return buffend - buffer;
+	}
+
+	//Echo command.  E[data], responds with the same data.
+	case 'e': case 'E':
 		if( retsize > len )
 		{
 			ets_memcpy( buffend, pusrdata, len );
@@ -223,6 +382,9 @@ failfx:
 		case 's': case 'S': CSSettingsSave(); buffend += ets_sprintf(buffend, "IS\r\n" ); break;
 		case 'l': case 'L': CSSettingsLoad( 0 ); buffend += ets_sprintf(buffend, "IL\r\n" ); break;
 		case 'r': case 'R': CSSettingsLoad( 1 ); buffend += ets_sprintf(buffend, "IR\r\n" ); break;
+		case 'f': case 'F':
+			//Start finding devices, or return list of found devices.
+			break;
 		case 'n': case 'N':   //Name
 			for( i = 0; i < sizeof( SETTINGS.DeviceName )-1; i++ )
 			{
@@ -240,7 +402,7 @@ failfx:
 			for( i = 0; i < sizeof( SETTINGS.DeviceDescription )-1; i++ )
 			{
 				char ci = pusrdata[i+2];
-				if( ci >= 33 && ci <= 'z' )
+				if( ci >= 32 && ci <= 'z' )
 					SETTINGS.DeviceDescription[i] = ci;
 				else
 					break;
@@ -308,7 +470,7 @@ failfx:
 		{
 		case '1': //Station mode
 		case '2': //AP Mode
-			if( colon && colon2 && ets_strlen( colon ) > 1 )
+			if( colon && colon2 )
 			{
 				if( c1l > 31 ) c1l = 31;
 				if( c2l > 63 ) c2l = 63;
@@ -423,11 +585,11 @@ failfx:
 			int rssi = wifi_station_get_rssi();
 			if( rssi >= 0 )
 			{
-				buffend += ets_sprintf( buffend, "WX-" );
+				buffend += ets_sprintf( buffend, "WX-\t%08x", GetCurrentIP() );
 			}
 			else
 			{
-				buffend += ets_sprintf( buffend, "WX%d", wifi_station_get_rssi() );
+				buffend += ets_sprintf( buffend, "WX%d\t%08x", wifi_station_get_rssi(), GetCurrentIP() );
 			}
 			break;
 		}
@@ -561,21 +723,15 @@ void ICACHE_FLASH_ATTR CSPreInit()
 		struct station_config sc;
 		wifi_station_get_config(&sc);
 		printf( "Station mode: \"%s\":\"%s\" (bssid_set:%d)\n", sc.ssid, sc.password, sc.bssid_set );
-		if( sc.ssid[0] == 0 && !sc.bssid_set )
-		{
-			wifi_set_opmode( 2 );
-			opmode = 2;
-		}
-		else
-		{
-			wifi_station_connect();
-		}
+		wifi_station_connect();
+//Disables null SSIDs.
+//		if( sc.ssid[0] == 0 && !sc.bssid_set )	{ wifi_set_opmode( 2 );	opmode = 2; }
 	}
 	if( opmode == 2 )
 	{
 		struct softap_config sc;
 		wifi_softap_get_config(&sc);
-		printf( "SoftAP mode: \"%s\":\"%s\"\n", sc.ssid, sc.password );
+		printf( "Default SoftAP mode: \"%s\":\"%s\"\n", sc.ssid, sc.password );
 	}
 }
 
@@ -604,20 +760,111 @@ void ICACHE_FLASH_ATTR CSInit()
     espconn_regist_time(pHTTPServer, 15, 0); //timeout
 }
 
+static void ICACHE_FLASH_ATTR SwitchToSoftAP( )
+{
+	EnterCritical();
+	wifi_set_opmode_current( SOFTAP_MODE );
+	struct softap_config sc;
+	wifi_softap_get_config(&sc);
+	printed_ip = 0;
+	printf( "SoftAP mode: \"%s\":\"%s\" @ %d %d/%d\n", sc.ssid, sc.password, wifi_get_channel(), sc.ssid_len, wifi_softap_dhcps_status() );
+	ExitCritical();
+}
+
+static void ICACHE_FLASH_ATTR SlowTick( int opm )
+{
+//	uart0_sendStr(".");
+	printf( "%d", opm );
+
+	HTTPTick(1);
+
+	if( BrowseRespond )
+	{
+		EmitWhoAmINow();
+	}
+
+	if( BrowseRequestTimeout == 1 )
+	{
+		if( BrowseSearchCount )
+		{
+			//Emit a browse.
+			EmitBrowseNow();
+			BrowseRequestTimeout = (rand()%20)+30;
+			BrowseSearchCount--;
+		}
+		else
+		{
+			BrowseRequestTimeout = 0;
+		}
+	}
+	else if( BrowseRequestTimeout )
+		BrowseRequestTimeout--;
+
+
+	if( opm == 1 )
+	{
+		struct station_config wcfg;
+		struct ip_info ipi;
+		int stat = wifi_station_get_connect_status();
+
+		if( stat == STATION_WRONG_PASSWORD || stat == STATION_NO_AP_FOUND || stat == STATION_CONNECT_FAIL )
+		{
+			wifi_station_disconnect();
+			printf( "Connection failed: %d\n", stat );
+			//SwitchToSoftAP(); //XXX WARNING: This does not /actually/ work.
+			wifi_station_connect(); //re-attempt.
+			printed_ip = 0;
+		}
+		else if( stat == STATION_GOT_IP && !printed_ip )
+		{
+			wifi_station_get_config( &wcfg );
+			wifi_get_ip_info(0, &ipi);
+			printf( "STAT: %d\n", stat );
+			printf( "IP: %d.%d.%d.%d\n", (ipi.ip.addr>>0)&0xff,(ipi.ip.addr>>8)&0xff,(ipi.ip.addr>>16)&0xff,(ipi.ip.addr>>24)&0xff );
+			printf( "NM: %d.%d.%d.%d\n", (ipi.netmask.addr>>0)&0xff,(ipi.netmask.addr>>8)&0xff,(ipi.netmask.addr>>16)&0xff,(ipi.netmask.addr>>24)&0xff );
+			printf( "GW: %d.%d.%d.%d\n", (ipi.gw.addr>>0)&0xff,(ipi.gw.addr>>8)&0xff,(ipi.gw.addr>>16)&0xff,(ipi.gw.addr>>24)&0xff );
+			printf( "WCFG: /%s/%s/\n", wcfg.ssid, wcfg.password );
+			printed_ip = 1;
+			CSConnectionChange();
+		}
+	}
+
+	if(	need_to_switch_opmode > 2 )
+	{
+		if( need_to_switch_opmode == 3 )
+		{
+			need_to_switch_opmode = 0;
+			wifi_set_opmode( 1 );
+			wifi_station_connect();
+		}
+		else
+		{
+			need_to_switch_opmode--;
+		}
+	}
+	else if(	need_to_switch_opmode == 2 )
+	{
+		need_to_switch_opmode = 0;
+		SwitchToSoftAP();
+	}
+}
+
+
 void CSTick( int slowtick )
 {
 	static uint8_t done_first_slowtick = 0;
 	static uint8_t tick_flag = 0;
 	static uint8_t last_opmode = 0;
 
+	//We're coming in from a timer event: Don't do things.
 	if( slowtick )
 	{
 		tick_flag = 1;
 		return;
 	}
+	//Idle Event.
 
 	int opm = wifi_get_opmode();
-	//Idle Event.
 	if( opm != last_opmode )
 	{
 		last_opmode = opm;
@@ -636,85 +883,14 @@ void CSTick( int slowtick )
 	//pause, though.
 	if( tick_flag )
 	{
-		uart0_sendStr(".");
-
-
-		if( opm == 1 )
-		{
-			struct station_config wcfg;
-			struct ip_info ipi;
-			int stat = wifi_station_get_connect_status();
-
-			if( stat == STATION_WRONG_PASSWORD || stat == STATION_NO_AP_FOUND || stat == STATION_CONNECT_FAIL )
-			{
-				wifi_station_disconnect();
-				need_to_switch_opmode = 2;
-				wifi_set_opmode_current( SOFTAP_MODE );
-				printf( "Connection failed: %d\n", stat );
-			}
-
-			if( stat == STATION_GOT_IP && !printed_ip )
-			{
-				wifi_station_get_config( &wcfg );
-				wifi_get_ip_info(0, &ipi);
-				printf( "STAT: %d\n", stat );
-				printf( "IP: %d.%d.%d.%d\n", (ipi.ip.addr>>0)&0xff,(ipi.ip.addr>>8)&0xff,(ipi.ip.addr>>16)&0xff,(ipi.ip.addr>>24)&0xff );
-				printf( "NM: %d.%d.%d.%d\n", (ipi.netmask.addr>>0)&0xff,(ipi.netmask.addr>>8)&0xff,(ipi.netmask.addr>>16)&0xff,(ipi.netmask.addr>>24)&0xff );
-				printf( "GW: %d.%d.%d.%d\n", (ipi.gw.addr>>0)&0xff,(ipi.gw.addr>>8)&0xff,(ipi.gw.addr>>16)&0xff,(ipi.gw.addr>>24)&0xff );
-				printf( "WCFG: /%s/%s/\n", wcfg.ssid, wcfg.password );
-				printed_ip = 1;
-				CSConnectionChange();
-			}
-		}
+		SlowTick( opm );
 
 		tick_flag = 0;
-		HTTPTick(1);
-		if(	need_to_switch_opmode == 2 )
-		{
-			need_to_switch_opmode = 3;
-			EnterCritical();
-			wifi_set_opmode_current( SOFTAP_MODE );
-			struct softap_config sc;
-			wifi_softap_get_config(&sc);
-			printf( "SoftAP mode: \"%s\":\"%s\" @ %d\n", sc.ssid, sc.password, wifi_get_channel() );
-			ExitCritical();
-		}
-		else if( need_to_switch_opmode == 3 )
-		{
-			need_to_switch_opmode = 0;
-			EnterCritical();
-			printf( "DHCP Start\n" );
-			wifi_softap_dhcps_start();
-			ExitCritical();
-			wifi_station_connect();
-		}
-		else if( need_to_switch_opmode == 4 )
-		{
-			need_to_switch_opmode = 0;
-			EnterCritical();
-			wifi_set_opmode( 1 );
-			wifi_station_connect();
-			ExitCritical();
-		}
 
-		//XXX TODO
 		if( !done_first_slowtick )
 		{
 			done_first_slowtick = 1;
-			printf( "First: %d\n", wifi_get_opmode_default() );
-			if( wifi_get_opmode_default() == 1 )
-			{
-				struct station_config sc;
-				wifi_station_get_config(&sc);
-				printf( "Station mode: \"%s\":\"%s\" (bssid_set:%d)\n", sc.ssid, sc.password, sc.bssid_set );
-				if( sc.ssid[0] == 0 && !sc.bssid_set )
-				{
-				}
-				else
-				{
-					wifi_set_opmode_current( 1 );
-				}
-			}
+			//Do anything you want only done once, here.
 		}
 	}
 }
@@ -730,7 +906,7 @@ void ICACHE_FLASH_ATTR CSSettingsLoad(int force_reinit)
 {
 	ets_memset( &SETTINGS, 0, sizeof( SETTINGS) );
 	system_param_load( 0x3A, 0, &SETTINGS, sizeof( SETTINGS ) );
-	if( SETTINGS.settings_key != 0xAF || force_reinit)
+	if( SETTINGS.settings_key != 0xAF || force_reinit || SETTINGS.DeviceName[0] == 0x00 || SETTINGS.DeviceName[0] == 0xFF )
 	{
 		ets_memset( &SETTINGS, 0, sizeof( SETTINGS ) );
 
@@ -746,6 +922,8 @@ void ICACHE_FLASH_ATTR CSSettingsLoad(int force_reinit)
 		CSSettingsSave();
 		system_restore();
 	}
+
+	wifi_station_set_hostname( SETTINGS.DeviceName );
 
 	printf( "Settings Loaded: %s / %s\n", SETTINGS.DeviceName, SETTINGS.DeviceDescription );
 }
