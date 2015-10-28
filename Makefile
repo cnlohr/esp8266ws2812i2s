@@ -14,7 +14,7 @@ SRCS:=driver/uart.c \
 	common/mfs.c \
 	user/custom_commands.c \
 	user/ws2812_i2s.c \
-	user/user_main.c 
+	user/user_main.c
 
 SRC_PATH:=/usr/src
 SDK_PATH:=$(SRC_PATH)/esp-open-sdk
@@ -78,7 +78,7 @@ burn : $(FW_FILE_1) $(FW_FILE_2)
 	($(ESPTOOL_PY) --port $(PORT) write_flash 0x00000 0x00000.bin 0x40000 0x40000.bin)||(true)
 
 #If you have space, MFS should live at 0x100000, if you don't it can also live at
-#0x10000.  But, then it is limited to 180kB.  You might need to do this if you have a 512kB 
+#0x10000.  But, then it is limited to 180kB.  You might need to do this if you have a 512kB
 #ESP variant.
 
 burnweb : web/page.mpfs
