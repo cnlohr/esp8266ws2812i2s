@@ -16,10 +16,12 @@ SRCS:=driver/uart.c \
 	user/ws2812_i2s.c \
 	user/user_main.c 
 
-GCC_FOLDER:=~/esp8266/esp-open-sdk/xtensa-lx106-elf
-ESPTOOL_PY:=~/esp8266/esptool/esptool.py
-FW_TOOL:=~/esp8266/other/esptool/esptool
-SDK:=/home/cnlohr/esp8266/esp_iot_sdk_v1.3.0
+SRC_PATH:=/usr/src
+SDK_PATH:=$(SRC_PATH)/esp-open-sdk
+GCC_FOLDER:=$(SDK_PATH)/xtensa-lx106-elf
+ESPTOOL_PY:=$(SDK_PATH)/esptool/esptool.py
+FW_TOOL:=$(SRC_PATH)/esptool-ck/esptool
+SDK:=$(SDK_PATH)/esp_iot_sdk_v1.4.0
 PORT:=/dev/ttyUSB0
 #PORT:=/dev/ttyACM0
 
