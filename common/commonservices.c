@@ -254,7 +254,7 @@ int ICACHE_FLASH_ATTR issue_command(char * buffer, int retsize, char *pusrdata, 
 		{
 		case 'e': case 'E':  //(FE#\n) <- # = sector.
 		{
-			if( nr < 128 )
+			if( nr < 16 )
 			{
 				buffend += ets_sprintf(buffend, "!FE%d\r\n", nr );
 				break;
@@ -270,7 +270,7 @@ int ICACHE_FLASH_ATTR issue_command(char * buffer, int retsize, char *pusrdata, 
 
 		case 'b': case 'B':  //(FB#\n) <- # = block.
 		{
-			if( nr < 8 )
+			if( nr < 1 )
 			{
 				buffend += ets_sprintf(buffend, "!FB%d\r\n", nr );
 				break;
@@ -295,7 +295,7 @@ int ICACHE_FLASH_ATTR issue_command(char * buffer, int retsize, char *pusrdata, 
 			{
 				colon++;
 				const char * colon2 = (const char *) ets_strstr( (char*)colon, "\t" );
-				if( colon2 && nr >= 524288)
+				if( colon2 && nr >= 65536)
 				{
 					colon2++;
 					int datlen = (int)len - (colon2 - pusrdata);
@@ -710,7 +710,12 @@ void ICACHE_FLASH_ATTR issue_command_udp(void *arg, char *pusrdata, unsigned sho
 	int r = issue_command( retbuf, 1300, pusrdata, len );
 	if( r > 0 )
 	{
-		espconn_sent( (struct espconn *)arg, retbuf, r );
+		struct espconn * rc = (struct espconn *)arg;
+		remot_info * ri = 0;
+		espconn_get_connection_info( rc, &ri, 0);
+		ets_memcpy( rc->proto.udp->remote_ip, ri->remote_ip, 4 );
+		rc->proto.udp->remote_port = ri->remote_port;
+		espconn_sendto( rc, retbuf, r );
 	}
 }
 

@@ -19,7 +19,7 @@ SRCS:=driver/uart.c \
 GCC_FOLDER:=~/esp8266/esp-open-sdk/xtensa-lx106-elf
 ESPTOOL_PY:=~/esp8266/esptool/esptool.py
 FW_TOOL:=~/esp8266/other/esptool/esptool
-SDK:=/home/cnlohr/esp8266/esp_iot_sdk_v1.3.0
+SDK:=/home/cnlohr/esp8266/esp_iot_sdk_v1.5.1
 PORT:=/dev/ttyUSB0
 #PORT:=/dev/ttyACM0
 
@@ -47,6 +47,7 @@ LDFLAGS_CORE:=\
 	$(SDK)/lib/libwpa.a \
 	$(SDK)/lib/libnet80211.a \
 	$(SDK)/lib/libphy.a \
+	$(SDK)/lib/libcrypto.a \
 	$(SDK)/lib/libmain.a \
 	$(SDK)/lib/libpp.a \
 	$(XTGCCLIB) \

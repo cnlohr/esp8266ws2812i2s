@@ -45,8 +45,8 @@ struct MFSFileInfo
 //Returns size of file if non-empty
 //If positive, populates mfi.
 //Returns -1 if can't find file or reached end of file list.
-ICACHE_FLASH_ATTR int8_t MFSOpenFile( const char * fname, struct MFSFileInfo * mfi );
-ICACHE_FLASH_ATTR int32_t MFSReadSector( uint8_t* data, struct MFSFileInfo * mfi ); //returns # of bytes left in file.
+int8_t ICACHE_FLASH_ATTR MFSOpenFile( const char * fname, struct MFSFileInfo * mfi );
+int32_t MFSReadSector( uint8_t* data, struct MFSFileInfo * mfi ); //returns # of bytes left in file.
 
 
 
