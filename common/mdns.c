@@ -342,6 +342,11 @@ static void ICACHE_FLASH_ATTR got_mdns_packet(void *arg, char *pusrdata, unsigne
 	int i, j, stlen;
 	char path[MAX_MDNS_PATH];
 
+	remot_info * ri = 0;
+	espconn_get_connection_info( pMDNSServer, &ri, 0);
+	ets_memcpy( pMDNSServer->proto.udp->remote_ip, ri->remote_ip, 4 );
+	pMDNSServer->proto.udp->remote_port = ri->remote_port;
+
 	uint16_t * psr = (uint16_t*)pusrdata;
 	uint16_t xactionid = HTONS( psr[0] );
 	uint16_t flags = HTONS( psr[1] );
