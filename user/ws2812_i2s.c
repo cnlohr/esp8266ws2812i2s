@@ -49,11 +49,11 @@ Extra copyright info:
 #ifdef WS2812_THREE_SAMPLE
 #define WS_I2S_BCK 22  //Seems to work as low as 19, but is shakey at 18.
 #define WS_I2S_DIV 4
-#elif defined( WS2812_FOUR_SAMPLE )
+#elif defined( WS2812_FOUR_SAMPLE ) || defined(SK6812)
 #define WS_I2S_BCK 17  //Seems to work as low as 14, shoddy at 13.
 #define WS_I2S_DIV 4
 #else
-#error You need to either define WS2812_THREE_SAMPLE or WS2812_FOUR_SAMPLE
+#error You need to either define WS2812_THREE_SAMPLE, WS2812_FOUR_SAMPLE or SK6812
 #endif
 
 #ifndef i2c_bbpll
@@ -425,6 +425,15 @@ static const uint16_t bitpatterns[16] = {
 	0b1110100010001000, 0b1110100010001110, 0b1110100011101000, 0b1110100011101110,
 	0b1110111010001000, 0b1110111010001110, 0b1110111011101000, 0b1110111011101110,
 };
+
+#elif defined(SK6812)
+// SK6812 has different timing for '1' bits, which requires 4bit samples
+static const uint16_t bitpatterns[16] = {
+	0b1000100010001000, 0b1000100010001100, 0b1000100011001000, 0b1000100011001100,
+	0b1000110010001000, 0b1000110010001100, 0b1000110011001000, 0b1000110011001100,
+	0b1100100010001000, 0b1100100010001100, 0b1100100011001000, 0b1100100011001100,
+	0b1100110010001000, 0b1100110010001100, 0b1100110011001000, 0b1100110011001100,
+};
 #endif
 
 void ws2812_push( uint8_t * buffer, uint16_t buffersize )
@@ -483,7 +492,7 @@ void ws2812_push( uint8_t * buffer, uint16_t buffersize )
 
 	while( bufferpl < &((uint8_t*)i2sBlock)[WS_BLOCKSIZE] ) *(bufferpl++) = 0;
 
-#elif defined(WS2812_FOUR_SAMPLE)
+#elif defined(WS2812_FOUR_SAMPLE) || defined(SK6812)
 	uint16_t * bufferpl = (uint16_t*)&i2sBlock[0];
 
 	if( buffersize * 4 > WS_BLOCKSIZE ) return;
