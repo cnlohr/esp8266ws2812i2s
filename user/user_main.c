@@ -85,9 +85,6 @@ void user_init(void)
 
 	uart0_sendStr("\r\nesp8266 ws2812 driver\r\n");
 
-//	int opm = wifi_get_opmode();
-//	if( opm == 1 ) need_to_switch_opmode = 120;
-//	wifi_set_opmode_current(2);
 //Uncomment this to force a system restore.
 //	system_restore();
 
@@ -126,8 +123,10 @@ void user_init(void)
 
 	ws2812_init();
 
-	uint8_t ledout[] = { 0x00, 0xff, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00 };
+	uint8_t ledout[] = { 0x10, 0x10, 0x10 };
 	ws2812_push( ledout, sizeof( ledout ) );
+
+	printf( "Boot Ok.\n" );
 
 	system_os_post(procTaskPrio, 0, 0 );
 }

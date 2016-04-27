@@ -6,7 +6,7 @@ var output;
 var websocket;
 var commsup = 0;
 
-var mpfs_start_at = 1048576;
+var mpfs_start_at = 65536; //1048576; NOTE: If you select 1048576, it will override the 65536 sector, but has much more room.
 var flash_scratchpad_at = 524288;
 var flash_blocksize = 65536;
 var flash_sendsize = 256;
@@ -379,6 +379,7 @@ function SysTickBack(req,data)
 		$("#SystemDescription").prop( "value", params[4] );
 		$("#SystemDescription").removeClass( "unsaved-input");
 	}
+	$("#ServiceName").html( params[5] );
 	
 	QueueOperation( "BL", CallbackForPeers );
 }
@@ -413,7 +414,7 @@ function InitSystemTicker()
 	sysset = document.getElementById( "systemsettings" );
 	SystemInfoTick();
 	sysset.innerHTML = "<TABLE style='width:150'><TR><TD>System Name:</TD><TD><INPUT TYPE=TEXT ID='SystemName' maxlength=10></TD><TD><INPUT TYPE=SUBMIT VALUE=Change ONCLICK='QueueOperation(\"IN\" + document.getElementById(\"SystemName\").value ); snchanged = false;'></TD></TR>\
-		<TR><TD>System Description:</TD><TD><INPUT TYPE=TEXT ID='SystemDescription' maxlength=16></TD><TD><INPUT TYPE=SUBMIT VALUE=Change ONCLICK='QueueOperation(\"ID\" + document.getElementById(\"SystemDescription\").value ); sdchanged = false;'></TD></TR></TABLE>\
+		<TR><TD NOWRAP>System Description:</TD><TD><INPUT TYPE=TEXT ID='SystemDescription' maxlength=16></TD><TD><INPUT TYPE=SUBMIT VALUE=Change ONCLICK='QueueOperation(\"ID\" + document.getElementById(\"SystemDescription\").value ); sdchanged = false;'></TD></TR><TR><TD>Service Name:</TD><TD><DIV ID=\"ServiceName\"></DIV></TD></TR></TABLE>\
 		<INPUT TYPE=SUBMIT VALUE=\"Reset To Current\" ONCLICK='SystemChangesReset();'>\
 		<INPUT TYPE=SUBMIT VALUE=Save ONCLICK='if( SystemUncommittedChanges() ) { IssueSystemMessage( \"Cannot save.  Uncommitted changes.\"); return; } QueueOperation(\"IS\", function() { IssueSystemMessage( \"Saving\" ); } ); SystemChangesReset(); '>\
 		<INPUT TYPE=SUBMIT VALUE=\"Revert From Saved\" ONCLICK='QueueOperation(\"IL\", function() { IssueSystemMessage( \"Reverting.\" ); } ); SystemChangesReset();'>\
@@ -729,18 +730,19 @@ function DragDropSystemFiles( file )
 
 		for( var i = 0; i < file.length; i++ )
 		{
-			if( file[i].name.substr( 0, 7 ) == "0x00000" ) file1 = file[i];
-			if( file[i].name.substr( 0, 7 ) == "0x40000" ) file2 = file[i];
+			console.log( "Found: " + file[i].name );
+			if( file[i].name.substr( 0, 17 ) == "image.elf-0x00000" ) file1 = file[i];
+			if( file[i].name.substr( 0, 17 ) == "image.elf-0x40000" ) file2 = file[i];
 		}
 
 		if( !file1 )
 		{
-			$("#innersystemflashtext").html( "Could not find a 0x00000... file." ); return;
+			$("#innersystemflashtext").html( "Could not find a image.elf-0x00000... file." ); return;
 		}
 
 		if( !file2 )
 		{
-			$("#innersystemflashtext").html( "Could not find a 0x40000... file." ); return;
+			$("#innersystemflashtext").html( "Could not find a image.elf-0x40000... file." ); return;
 		}
 
 		if(  file1.size > 65536 )

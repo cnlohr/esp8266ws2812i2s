@@ -1,6 +1,6 @@
 TARGET_OUT:=image.elf
 FW_FILES:=image.elf-0x00000.bin image.elf-0x40000.bin
-all : $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2)
+all : $(TARGET_OUT) $(FW_FILES)
 
 
 SRCS:=driver/uart.c \
@@ -80,8 +80,8 @@ burnweb : web/page.mpfs
 
 IP?=192.168.4.1
 
-netburn : image.elf $(FW_FILE_1) $(FW_FILE_2)
-	web/execute_reflash $(IP) 0x00000.bin 0x40000.bin
+netburn : image.elf $(FW_FILES)
+	web/execute_reflash $(IP) image.elf-0x00000.bin image.elf-0x40000.bin
 
 clean :
 	rm -rf user/*.o driver/*.o $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2)

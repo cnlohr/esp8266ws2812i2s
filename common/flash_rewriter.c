@@ -12,6 +12,19 @@
 static const char * key = "";
 static int keylen = 0;
 
+#define Kets_sprintf ets_sprintf
+#define Kuart0_sendStr uart0_sendStr
+
+//#define THIS_DEBUG
+
+void HEX16Convert( char * out, uint8_t * in )
+{
+	int i;
+	for( i = 0; i < 16; i++ )
+	{
+		Kets_sprintf( out+i*2, "%02x", in[i] );
+	}
+}
 
 static int MyRewriteFlash( char * command, int commandlen )
 {
@@ -69,45 +82,45 @@ static int MyRewriteFlash( char * command, int commandlen )
 	///////////////////////////////
 	char st[400];
 /*
-	ets_sprintf( st, "!!%08x", (((uint32_t*)(0x40200000 + from1))) );
-	uart0_sendStr( st );
+	Kets_sprintf( st, "!!%08x", (((uint32_t*)(0x40200000 + from1))) );
+	Kuart0_sendStr( st );
 	
 	for( i = 0; i < 200; i++ )
 	{
-		ets_sprintf( st, "%08x", (uint32_t)(((uint32_t*)(0x40200000 + from1))[i]) );
-		uart0_sendStr( st );
+		Kets_sprintf( st, "%08x", (uint32_t)(((uint32_t*)(0x40200000 + from1))[i]) );
+		Kuart0_sendStr( st );
 	}
-	uart0_sendStr( "+\n" );
+	Kuart0_sendStr( "+\n" );
 
 /*
 
 
 	uint32_t __attribute__ ((aligned (32)))  readr = 0xAAAAAAAA;
 	SPIRead( from1, &readr, 4 );
-	ets_sprintf( st, ":%08x\n", readr );
-	uart0_sendStr( st );
+	Kets_sprintf( st, ":%08x\n", readr );
+	Kuart0_sendStr( st );
 	readr = 0x12345678;
 
 	SPIRead( from1+4, &readr, 4 );
-	ets_sprintf( st, ":%08x\n", readr );
-	uart0_sendStr( st );
-	uart0_sendStr( "\n" );
+	Kets_sprintf( st, ":%08x\n", readr );
+	Kuart0_sendStr( st );
+	Kuart0_sendStr( "\n" );
 
-	ets_sprintf( st, "TT: %08x ADDY: %08x\n", from1, &readr );
-	uart0_sendStr( st );
+	Kets_sprintf( st, "TT: %08x ADDY: %08x\n", from1, &readr );
+	Kuart0_sendStr( st );
 
 
 
 	
 	readr = 0xAAAAAAAA;
 	spi_flash_read( from1, &readr, 4 );
-	ets_sprintf( st, "+%08x\n", readr );
-	uart0_sendStr( st );
+	Kets_sprintf( st, "+%08x\n", readr );
+	Kuart0_sendStr( st );
 
 	readr = 0xbbbbbbbb;
 	spi_flash_read( from1+4, &readr, 4 );
-	ets_sprintf( st, "+%08x\n", readr );
-	uart0_sendStr( st );
+	Kets_sprintf( st, "+%08x\n", readr );
+	Kuart0_sendStr( st );
 
 */
 
@@ -117,17 +130,17 @@ static int MyRewriteFlash( char * command, int commandlen )
 	MD5Final( md5h1raw, &md5ctx );
 	for( i = 0; i < 16; i++ )
 	{
-		ets_sprintf( md5h1+i*2, "%02x", md5h1raw[i] );
+		Kets_sprintf( md5h1+i*2, "%02x", md5h1raw[i] );
 	}
-	uart0_sendStr( "Hash 1:" );
-	uart0_sendStr( md5h1 );
-	uart0_sendStr( "!\n" );
+	Kuart0_sendStr( "Hash 1:" );
+	Kuart0_sendStr( md5h1 );
+	Kuart0_sendStr( "!\n" );
 */
 
 	//////////////////////////////
 
-	ets_sprintf( st, "Computing Hash 1: %08x size %d\n", from1, size1 );
-	uart0_sendStr( st );
+	Kets_sprintf( st, "Computing Hash 1: %08x size %d\n", from1, size1 );
+	Kuart0_sendStr( st );
 
 	MD5Init( &md5ctx );
 	if( keylen )
@@ -135,62 +148,70 @@ static int MyRewriteFlash( char * command, int commandlen )
 //	MD5Update( &md5ctx, (uint8_t*)0x40200000 + from1, size1 );
 	SafeMD5Update( &md5ctx, (uint8_t*)0x40200000 + from1, size1 );
 	MD5Final( md5h1raw, &md5ctx );
-	for( i = 0; i < 16; i++ )
-	{
-		ets_sprintf( md5h1+i*2, "%02x", md5h1raw[i] );
-	}
 
-	uart0_sendStr( "Hash 1:" );
-	uart0_sendStr( md5h1 );
-	uart0_sendStr( "\n" );
+	HEX16Convert( md5h1, md5h1raw );
+
+#ifdef THIS_DEBUG
+	Kuart0_sendStr( "Hash 1:" );
+	Kuart0_sendStr( md5h1 );
+	Kuart0_sendStr( "\n" );
+#endif
 
 	for( i = 0; i < 32; i++ )
 	{
 		if( md5h1[i] != md51[i] )
 		{
+#ifdef THIS_DEBUG
 			//printf( "%s != %s", md5h1, md51 );
-			uart0_sendStr( "File 1 MD5 mismatch\nActual:" );
-			uart0_sendStr( md5h1 );
-			uart0_sendStr( "\nExpected:" );
-			uart0_sendStr( md51 );
-			uart0_sendStr( "\n" );
+			Kuart0_sendStr( "File 1 MD5 mismatch." );
+			Kuart0_sendStr( md5h1 );
+			Kuart0_sendStr( "\nExpected:" );
+			Kuart0_sendStr( md51 );
+			Kuart0_sendStr( "\n" );
+#endif
+			Kuart0_sendStr( "F1MD5 MM" );
 			return 4;
 		}
 	}
 
-	ets_sprintf( st, "Computing Hash 2: %08x size %d\n", from2, size2 );
-	uart0_sendStr( st );
+#ifdef THIS_DEBUG
+	Kets_sprintf( st, "CH 2: %08x size %d\n", from2, size2 );
+	Kuart0_sendStr( st );
+#endif
 
 	MD5Init( &md5ctx );
 	if( keylen )
 		MD5Update( &md5ctx, key, keylen );
 	SafeMD5Update( &md5ctx, (uint8_t*)0x40200000 + from2, size2 );
 	MD5Final( md5h2raw, &md5ctx );
-	for( i = 0; i < 16; i++ )
-	{
-		ets_sprintf( md5h2+i*2, "%02x", md5h2raw[i] );
-	}
 
-	uart0_sendStr( "Hash 2:" );
-	uart0_sendStr( md5h2 );
-	uart0_sendStr( "\n" );
+	HEX16Convert(md5h2, md5h2raw );
+
+#ifdef THIS_DEBUG
+	Kuart0_sendStr( "Hash 2:" );
+	Kuart0_sendStr( md5h2 );
+	Kuart0_sendStr( "\n" );
+#endif
 
 /*	for( i = 0; i <= size2/4; i++ )
 	{
 		uint32_t j = ((uint32_t*)(0x40200000 + from2))[i];
-		ets_sprintf( st, "%02x%02x%02x%02x\n", (uint8_t)(j>>0), (uint8_t)(j>>8), (uint8_t)(j>>16), (uint8_t)(j>>24) );
-		uart0_sendStr( st );
+		Kets_sprintf( st, "%02x%02x%02x%02x\n", (uint8_t)(j>>0), (uint8_t)(j>>8), (uint8_t)(j>>16), (uint8_t)(j>>24) );
+		Kuart0_sendStr( st );
 	}*/
 
 	for( i = 0; i < 32; i++ )
 	{
 		if( md5h2[i] != md52[i] )
 		{
-			uart0_sendStr( "File 2 MD5 mismatch\nActual:" );
-			uart0_sendStr( md5h2 );
-			uart0_sendStr( "\nExpected:" );
-			uart0_sendStr( md52 );
-			uart0_sendStr( "\n" );
+#ifdef THIS_DEBUG
+			Kuart0_sendStr( "File 2 MD5 mismatch" );
+			Kuart0_sendStr( md5h2 );
+			Kuart0_sendStr( "\nExpected:" );
+			Kuart0_sendStr( md52 );
+			Kuart0_sendStr( "\n" );
+#endif
+			Kuart0_sendStr( "F2MD5 MM" );
 			return 5;
 		}
 	}
@@ -199,10 +220,10 @@ static int MyRewriteFlash( char * command, int commandlen )
 	size1 = ((size1-1)&(~0xfff))+1;
 	size2 = ((size2-1)&(~0xfff))+1;
 
-	ets_sprintf( st, "Copy 1: %08x to %08x, size %d\n", from1, to1, size1 );
-	uart0_sendStr( st );
-	ets_sprintf( st, "Copy 2: %08x to %08x, size %d\n", from2, to2, size2 );
-	uart0_sendStr( st );
+	Kets_sprintf( st, "Copy 1: %08x to %08x, size %d\n", from1, to1, size1 );
+	Kuart0_sendStr( st );
+	Kets_sprintf( st, "Copy 2: %08x to %08x, size %d\n", from2, to2, size2 );
+	Kuart0_sendStr( st );
 
 	//Everything checked out... Need to move the flashes.
 

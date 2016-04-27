@@ -36,6 +36,7 @@ int ets_str2macaddr(void *, void *);
 
 uint8_t need_to_switch_opmode = 0; //0 = no, 1 = will need to. 2 = do it now.
 uint8_t retry_count = 0;
+#define MAX_RETRY_COUNT 10
 
 #define MAX_STATIONS 20
 struct totalscan_t
@@ -328,7 +329,7 @@ int ICACHE_FLASH_ATTR issue_command(char * buffer, int retsize, char *pusrdata, 
 				//nr = place to write.
 				//siz = size to write.
 				//colon2 = data start.
-				if( colon2 && nr >= FLASH_PROTECTION_BOUNDARY)
+				if( colon2 && (nr >= FLASH_PROTECTION_BOUNDARY || ( nr >= 0x10000 && nr < 0x30000 ) ) )
 				{
 					colon2++;
 					int datlen = ((int)len - (colon2 - pusrdata))/2;
@@ -423,6 +424,7 @@ failfx:
 			}
 			buffend += ets_sprintf(buffend, "\t%s", SETTINGS.DeviceName );
 			buffend += ets_sprintf(buffend, "\t%s", SETTINGS.DeviceDescription );
+			buffend += ets_sprintf(buffend, "\t%s", ServiceName );
 		}
 		return buffend - buffer;
 	}
@@ -820,7 +822,7 @@ static void ICACHE_FLASH_ATTR SlowTick( int opm )
 			wifi_station_disconnect();
 			printf( "Connection failed: %d\n", stat );
 			retry_count++;
-			if( retry_count > 3 )
+			if( retry_count > MAX_RETRY_COUNT )
 			{
 				SwitchToSoftAP(); //XXX WARNING: This does not /actually/ work.
 			} else {
