@@ -9,7 +9,7 @@
 const char * enctypes[6] = { "open", "wep", "wpa", "wpa2", "wpa_wpa2", 0 };
 
 char generic_print_buffer[384];
-char generic_buffer[1500] ((aligned (32)));;
+char generic_buffer[1500] __attribute__((aligned (32)));
 char * generic_ptr;
 
 int32 my_atoi( const char * in )
