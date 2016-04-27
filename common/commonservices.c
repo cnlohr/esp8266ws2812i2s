@@ -34,7 +34,9 @@ static uint16_t BrowseRespondPort = 0;
 
 int ets_str2macaddr(void *, void *);
 
-int need_to_switch_opmode = 0; //0 = no, 1 = will need to. 2 = do it now.
+uint8_t need_to_switch_opmode = 0; //0 = no, 1 = will need to. 2 = do it now.
+uint8_t retry_count = 0;
+
 #define MAX_STATIONS 20
 struct totalscan_t
 {
@@ -495,6 +497,7 @@ failfx:
 
 					EnterCritical();
 //					wifi_station_set_config(&stationConf);
+					wifi_set_opmode_current( 1 );
 					wifi_set_opmode( 1 );
 					wifi_station_set_config(&stationConf);
 					wifi_station_connect();
@@ -816,14 +819,20 @@ static void ICACHE_FLASH_ATTR SlowTick( int opm )
 		{
 			wifi_station_disconnect();
 			printf( "Connection failed: %d\n", stat );
-			//SwitchToSoftAP(); //XXX WARNING: This does not /actually/ work.
-			wifi_station_connect(); //re-attempt.
+			retry_count++;
+			if( retry_count > 3 )
+			{
+				SwitchToSoftAP(); //XXX WARNING: This does not /actually/ work.
+			} else {
+				wifi_station_connect(); //re-attempt... 3x.
+			}
 			printed_ip = 0;
 		}
 		else if( stat == STATION_GOT_IP && !printed_ip )
 		{
 			wifi_station_get_config( &wcfg );
 			wifi_get_ip_info(0, &ipi);
+			retry_count = 0;
 			printf( "STAT: %d\n", stat );
 			printf( "IP: %d.%d.%d.%d\n", (ipi.ip.addr>>0)&0xff,(ipi.ip.addr>>8)&0xff,(ipi.ip.addr>>16)&0xff,(ipi.ip.addr>>24)&0xff );
 			printf( "NM: %d.%d.%d.%d\n", (ipi.netmask.addr>>0)&0xff,(ipi.netmask.addr>>8)&0xff,(ipi.netmask.addr>>16)&0xff,(ipi.netmask.addr>>24)&0xff );

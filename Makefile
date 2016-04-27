@@ -1,6 +1,5 @@
-FW_FILE_1:=0x00000.bin
-FW_FILE_2:=0x40000.bin
 TARGET_OUT:=image.elf
+FW_FILES:=image.elf-0x00000.bin image.elf-0x40000.bin
 all : $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2)
 
 
@@ -18,7 +17,6 @@ SRCS:=driver/uart.c \
 
 GCC_FOLDER:=~/esp8266/esp-open-sdk/xtensa-lx106-elf
 ESPTOOL_PY:=~/esp8266/esptool/esptool.py
-FW_TOOL:=~/esp8266/other/esptool/esptool
 SDK:=/home/cnlohr/esp8266/esp_iot_sdk_v1.5.1
 PORT:=/dev/ttyUSB0
 #PORT:=/dev/ttyACM0
@@ -65,16 +63,12 @@ $(TARGET_OUT) : $(SRCS)
 
 
 
-$(FW_FILE_1): $(TARGET_OUT)
+$(FW_FILES): $(TARGET_OUT)
 	@echo "FW $@"
-	$(FW_TOOL) -eo $(TARGET_OUT) -bo $@ -bs .text -bs .data -bs .rodata -bc -ec
+	PATH=$(FOLDERPREFIX):$$PATH;$(ESPTOOL_PY) elf2image $(TARGET_OUT)
 
-$(FW_FILE_2): $(TARGET_OUT)
-	@echo "FW $@"
-	$(FW_TOOL) -eo $(TARGET_OUT) -es .irom0.text $@ -ec
-
-burn : $(FW_FILE_1) $(FW_FILE_2)
-	($(ESPTOOL_PY) --port $(PORT) write_flash 0x00000 0x00000.bin 0x40000 0x40000.bin)||(true)
+burn : $(FW_FILES)
+	($(ESPTOOL_PY) --port $(PORT) write_flash 0x00000 image.elf-0x00000.bin 0x40000 image.elf-0x40000.bin)||(true)
 
 #If you have space, MFS should live at 0x100000, if you don't it can also live at
 #0x10000.  But, then it is limited to 180kB.  You might need to do this if you have a 512kB 

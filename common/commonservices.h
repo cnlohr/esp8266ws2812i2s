@@ -46,7 +46,7 @@ void ExitCritical();
 int ICACHE_FLASH_ATTR CustomCommand(char * buffer, int retsize, char *pusrdata, unsigned short len);
 
 //Other utility stuff
-extern int need_to_switch_opmode; //0 = no, 1 = will need to after a scan. 2 = do it now. 3 = need to go back into station mode.
+extern uint8_t need_to_switch_opmode; //0 = no, 1 = will need to after a scan. 2 = do it now. 3 = need to go back into station mode.
 
 
 
