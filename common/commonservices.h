@@ -51,7 +51,8 @@ extern uint8_t need_to_switch_opmode; //0 = no, 1 = will need to after a scan. 2
 
 
 //Browse mechanism.
-#define BROWSE_CLIENTS_LIST_SIZE 20
+#define BROWSE_CLIENTS_LIST_SIZE_MAX 30
+#define KEEP_BROWSE_TIME 2000
 
 struct BrowseClient
 {
@@ -61,7 +62,7 @@ struct BrowseClient
 	char    description[17];
 };
 
-extern struct BrowseClient FoundBrowseClients[BROWSE_CLIENTS_LIST_SIZE];
+extern struct BrowseClient * FoundBrowseClients;
 
 //Service name can be the title of the service, or can be "esp8266" to list all ESP8266's.
 void ICACHE_FLASH_ATTR BrowseForService( const char * servicename );

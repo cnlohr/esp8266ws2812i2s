@@ -380,6 +380,7 @@ function SysTickBack(req,data)
 		$("#SystemDescription").removeClass( "unsaved-input");
 	}
 	$("#ServiceName").html( params[5] );
+	$("#FreeHeap").html( params[6] );
 	
 	QueueOperation( "BL", CallbackForPeers );
 }
@@ -414,7 +415,7 @@ function InitSystemTicker()
 	sysset = document.getElementById( "systemsettings" );
 	SystemInfoTick();
 	sysset.innerHTML = "<TABLE style='width:150'><TR><TD>System Name:</TD><TD><INPUT TYPE=TEXT ID='SystemName' maxlength=10></TD><TD><INPUT TYPE=SUBMIT VALUE=Change ONCLICK='QueueOperation(\"IN\" + document.getElementById(\"SystemName\").value ); snchanged = false;'></TD></TR>\
-		<TR><TD NOWRAP>System Description:</TD><TD><INPUT TYPE=TEXT ID='SystemDescription' maxlength=16></TD><TD><INPUT TYPE=SUBMIT VALUE=Change ONCLICK='QueueOperation(\"ID\" + document.getElementById(\"SystemDescription\").value ); sdchanged = false;'></TD></TR><TR><TD>Service Name:</TD><TD><DIV ID=\"ServiceName\"></DIV></TD></TR></TABLE>\
+		<TR><TD NOWRAP>System Description:</TD><TD><INPUT TYPE=TEXT ID='SystemDescription' maxlength=16></TD><TD><INPUT TYPE=SUBMIT VALUE=Change ONCLICK='QueueOperation(\"ID\" + document.getElementById(\"SystemDescription\").value ); sdchanged = false;'></TD></TR><TR><TD>Service Name:</TD><TD><DIV ID=\"ServiceName\"></DIV></TD></TR><TR><TD>Free Heap:</TD><TD><DIV ID=\"FreeHeap\"></DIV></TD></TR></TABLE>\
 		<INPUT TYPE=SUBMIT VALUE=\"Reset To Current\" ONCLICK='SystemChangesReset();'>\
 		<INPUT TYPE=SUBMIT VALUE=Save ONCLICK='if( SystemUncommittedChanges() ) { IssueSystemMessage( \"Cannot save.  Uncommitted changes.\"); return; } QueueOperation(\"IS\", function() { IssueSystemMessage( \"Saving\" ); } ); SystemChangesReset(); '>\
 		<INPUT TYPE=SUBMIT VALUE=\"Revert From Saved\" ONCLICK='QueueOperation(\"IL\", function() { IssueSystemMessage( \"Reverting.\" ); } ); SystemChangesReset();'>\

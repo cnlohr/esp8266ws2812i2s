@@ -60,6 +60,8 @@ LINKFLAGS:= \
 
 $(TARGET_OUT) : $(SRCS)
 	$(PREFIX)gcc $(CFLAGS) $^  -flto $(LINKFLAGS) -o $@
+	nm -S -n $(TARGET_OUT) > image.map
+	$(PREFIX)objdump -S $@ > image.lst
 
 
 
@@ -68,6 +70,9 @@ $(FW_FILES): $(TARGET_OUT)
 	PATH=$(FOLDERPREFIX):$$PATH;$(ESPTOOL_PY) elf2image $(TARGET_OUT)
 
 burn : $(FW_FILES)
+	stty -F $(PORT) 115200 -echo raw
+	sleep .1
+	(/bin/echo -ne "\xc2\x42\x56\xff\x00" > $(PORT))||(	true)
 	($(ESPTOOL_PY) --port $(PORT) write_flash 0x00000 image.elf-0x00000.bin 0x40000 image.elf-0x40000.bin)||(true)
 
 #If you have space, MFS should live at 0x100000, if you don't it can also live at

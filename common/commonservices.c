@@ -5,6 +5,7 @@
 #include "mem.h"
 #include "c_types.h"
 #include "user_interface.h"
+#include <mem.h>
 #include "ets_sys.h"
 #include "osapi.h"
 #include "espconn.h"
@@ -24,13 +25,17 @@ static struct espconn *pHTTPServer;
 struct espconn *pespconn;
 uint16_t g_gpiooutputmask = 0;
 
-struct BrowseClient FoundBrowseClients[BROWSE_CLIENTS_LIST_SIZE];
+int BrowseClientQuantity;
+struct BrowseClient * FoundBrowseClients;
+int time_since_last_browse = -1; //for expiring.
+
 static char BrowsingService[11];
 static char ServiceName[17];
 static int  BrowseRequestTimeout = 0;
 static int  BrowseSearchCount = 0; //Number of times to search for other ESPs when searching.
 static uint32_t BrowseRespond = 0;
 static uint16_t BrowseRespondPort = 0;
+static uint32_t thisfromip;
 
 int ets_str2macaddr(void *, void *);
 
@@ -84,10 +89,10 @@ void ICACHE_FLASH_ATTR BrowseForService( const char * servicename )
 	ets_memcpy( BrowsingService, servicename, sl );
 	BrowsingService[sl] = 0;
 
-	for( sl = 0; sl < BROWSE_CLIENTS_LIST_SIZE; sl++ )
-	{
-		FoundBrowseClients[sl].ip = 0;
-	}
+	BrowseClientQuantity = 0;
+	os_free( FoundBrowseClients );
+	FoundBrowseClients = 0;
+	time_since_last_browse = 0;
 
 	BrowseRequestTimeout = 1;
 	BrowseSearchCount = 5;
@@ -150,7 +155,7 @@ int ICACHE_FLASH_ATTR issue_command(char * buffer, int retsize, char *pusrdata, 
 			NixNewline( srv );
 			NixNewline( nam );
 			NixNewline( des );
-			int fromip = IP4_to_uint32(pUdpServer->proto.udp->remote_ip);
+			int fromip = thisfromip;
 
 			switch( pusrdata[1] )
 			{
@@ -171,22 +176,39 @@ int ICACHE_FLASH_ATTR issue_command(char * buffer, int retsize, char *pusrdata, 
 				}	//Do not respond to sender here.
 				break;
 			case 'r': case 'R': //Response
-				if( srv && nam && des )
+				if( srv && nam && des && time_since_last_browse >= 0 )
 				{
 					//Find in list.
-					int i;
+					int i = -1;
 					int last_empty = -1;
-					for( i = 0; i < BROWSE_CLIENTS_LIST_SIZE; i++ )
+
+					
+					for( i = 0; i < BrowseClientQuantity; i++ )
 					{
 						uint32_t ip = FoundBrowseClients[i].ip;
 						if( last_empty == -1 && ip == 0 ) last_empty = i;
 						if( fromip == ip ) break;
 					}
 
-					if( i == BROWSE_CLIENTS_LIST_SIZE )
+					if( BrowseClientQuantity == 0 )
+					{
+						FoundBrowseClients = (struct BrowseClient *)os_malloc( sizeof( struct BrowseClient ) );
+						i = last_empty = 0;
+						BrowseClientQuantity = 1;
+					}
+
+					if( i == BrowseClientQuantity )
 					{
 						//Not in list.
-						i = last_empty;
+						if( i == BROWSE_CLIENTS_LIST_SIZE_MAX )
+						{
+							i = -1; //Can't add anymore.
+						}
+						else
+						{
+							BrowseClientQuantity++;
+							FoundBrowseClients = (struct BrowseClient *)os_realloc( FoundBrowseClients, sizeof( struct BrowseClient )*(BrowseClientQuantity) );
+						}
 					}
 
 					//Update this entry.
@@ -214,14 +236,14 @@ int ICACHE_FLASH_ATTR issue_command(char * buffer, int retsize, char *pusrdata, 
 			{
 				int i;
 				int found = 0;
-				for( i = 0; i < BROWSE_CLIENTS_LIST_SIZE; i++ )
+				for( i = 0; i < BrowseClientQuantity; i++ )
 				{
 					if( FoundBrowseClients[i].ip ) found++;
 				}
 
 				buffend += ets_sprintf(buffend, "BL%d\t%d\n", found, BrowseSearchCount );
 
-				for( i = 0; i < BROWSE_CLIENTS_LIST_SIZE; i++ )
+				for( i = 0; i < BrowseClientQuantity; i++ )
 				{
 					if( FoundBrowseClients[i].ip )
 					{
@@ -425,6 +447,7 @@ failfx:
 			buffend += ets_sprintf(buffend, "\t%s", SETTINGS.DeviceName );
 			buffend += ets_sprintf(buffend, "\t%s", SETTINGS.DeviceDescription );
 			buffend += ets_sprintf(buffend, "\t%s", ServiceName );
+			buffend += ets_sprintf(buffend, "\t%d", system_get_free_heap_size() );
 		}
 		return buffend - buffer;
 	}
@@ -712,12 +735,16 @@ failfx:
 void ICACHE_FLASH_ATTR issue_command_udp(void *arg, char *pusrdata, unsigned short len)
 {
 	char  __attribute__ ((aligned (32))) retbuf[1300];
+	struct espconn * rc = (struct espconn *)arg;
+	remot_info * ri = 0;
+	espconn_get_connection_info( rc, &ri, 0);
+
+	thisfromip = IP4_to_uint32(ri->remote_ip);
+
 	int r = issue_command( retbuf, 1300, pusrdata, len );
+
 	if( r > 0 )
 	{
-		struct espconn * rc = (struct espconn *)arg;
-		remot_info * ri = 0;
-		espconn_get_connection_info( rc, &ri, 0);
 		ets_memcpy( rc->proto.udp->remote_ip, ri->remote_ip, 4 );
 		rc->proto.udp->remote_port = ri->remote_port;
 		espconn_sendto( rc, retbuf, r );
@@ -810,6 +837,13 @@ static void ICACHE_FLASH_ATTR SlowTick( int opm )
 	else if( BrowseRequestTimeout )
 		BrowseRequestTimeout--;
 
+	if( time_since_last_browse > KEEP_BROWSE_TIME )
+	{
+		if( FoundBrowseClients ) os_free( FoundBrowseClients );
+		FoundBrowseClients = 0;
+		BrowseClientQuantity = 0;
+		time_since_last_browse = -1;
+	}
 
 	if( opm == 1 )
 	{
@@ -922,6 +956,7 @@ void ICACHE_FLASH_ATTR CSSettingsLoad(int force_reinit)
 {
 	ets_memset( &SETTINGS, 0, sizeof( SETTINGS) );
 	system_param_load( 0x3A, 0, &SETTINGS, sizeof( SETTINGS ) );
+	printf( "Loading Settings: %02x / %d / %d / %d\n", SETTINGS.settings_key, force_reinit, SETTINGS.DeviceName[0], SETTINGS.DeviceName[0] );
 	if( SETTINGS.settings_key != 0xAF || force_reinit || SETTINGS.DeviceName[0] == 0x00 || SETTINGS.DeviceName[0] == 0xFF )
 	{
 		ets_memset( &SETTINGS, 0, sizeof( SETTINGS ) );

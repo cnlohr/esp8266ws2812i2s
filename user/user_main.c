@@ -83,7 +83,7 @@ void user_init(void)
 {
 	uart_init(BIT_RATE_115200, BIT_RATE_115200);
 
-	uart0_sendStr("\r\nesp8266 ws2812 driver\r\n");
+	uart0_sendStr("\r\n\033cesp8266 ws2812 driver\r\n");
 
 //Uncomment this to force a system restore.
 //	system_restore();
