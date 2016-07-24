@@ -106,6 +106,18 @@ void user_init(void)
 
 	CSInit();
 
+
+
+	//Set GPIO16 for INput
+	WRITE_PERI_REG(PAD_XPD_DCDC_CONF,
+		(READ_PERI_REG(PAD_XPD_DCDC_CONF) & 0xffffffbc) | (uint32)0x1);     // mux configuration for XPD_DCDC and rtc_gpio0 connection
+
+	WRITE_PERI_REG(RTC_GPIO_CONF,
+		(READ_PERI_REG(RTC_GPIO_CONF) & (uint32)0xfffffffe) | (uint32)0x0); //mux configuration for out enable
+
+	WRITE_PERI_REG(RTC_GPIO_ENABLE,
+		READ_PERI_REG(RTC_GPIO_ENABLE) & (uint32)0xfffffffe);       //out disable
+
 	SetServiceName( "ws2812" );
 	AddMDNSName( "cn8266" );
 	AddMDNSName( "ws2812" );
@@ -127,6 +139,10 @@ void user_init(void)
 	ws2812_push( ledout, sizeof( ledout ) );
 
 	printf( "Boot Ok.\n" );
+
+ 
+	wifi_set_sleep_type(LIGHT_SLEEP_T);
+	wifi_fpm_set_sleep_type(LIGHT_SLEEP_T);
 
 	system_os_post(procTaskPrio, 0, 0 );
 }

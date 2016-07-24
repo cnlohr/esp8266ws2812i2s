@@ -43,7 +43,7 @@ Extra copyright info:
 #include "pin_mux_register.h"
 
 //Creates an I2S SR of 93,750 Hz, or 3 MHz Bitclock (.333us/sample)
-// 12000000L/(div*bestbck*2)
+// 1600000000L/(div*bestbck)
 //It is likely you could speed this up a little.
 
 #ifdef WS2812_THREE_SAMPLE

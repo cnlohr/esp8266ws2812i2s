@@ -84,7 +84,7 @@ int32_t ICACHE_FLASH_ATTR MFSReadSector( uint8_t* data, struct MFSFileInfo * mfi
 
 	EnterCritical();
 	flashchip->chip_size = 0x01000000;
-	spi_flash_read( mfs_at+mfi->offset, (uint32*)data, MFS_SECTOR );
+	spi_flash_read( mfs_at+mfi->offset, (uint32*)data, MFS_SECTOR ); //TODO: should we make this toread?  maybe toread rounded up?
 	flashchip->chip_size = 0x00080000;
 	ExitCritical();
 
