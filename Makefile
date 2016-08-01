@@ -70,10 +70,7 @@ $(FW_FILES): $(TARGET_OUT)
 	PATH=$(FOLDERPREFIX):$$PATH;$(ESPTOOL_PY) elf2image $(TARGET_OUT)
 
 burn : $(FW_FILES)
-	stty -F $(PORT) 115200 -echo raw
-	sleep .1
-	(/bin/echo -ne "\xc2\x42\x56\xff\x00" > $(PORT))||(	true)
-	($(ESPTOOL_PY) --port $(PORT) write_flash 0x00000 image.elf-0x00000.bin 0x40000 image.elf-0x40000.bin)||(true)
+	$(ESPTOOL_PY) --port $(PORT) write_flash -fm dout 0x00000 image.elf-0x00000.bin 0x40000 image.elf-0x40000.bin
 
 #If you have space, MFS should live at 0x100000, if you don't it can also live at
 #0x10000.  But, then it is limited to 180kB.  You might need to do this if you have a 512kB 
