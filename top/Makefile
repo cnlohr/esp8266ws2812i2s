@@ -1,10 +1,9 @@
+CFLAGS= -std=gnu99 -Wall -Wextra -O2 -march=native
+
 all : top cup
 
 top : top.o
-	gcc -o $@ $^ -lm
-
-cup : cup.o
-	gcc -o $@ $^ -lm
+	$(CC) -o $@ $^ -lm
 
 clean :
-	rm -rf *.o *~
+	rm -rf top.o *~

@@ -1,5 +1,8 @@
+#include <stdlib.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -83,7 +86,7 @@ int main( int argc, char ** argv )
 	int firstoverride = -1;
 	if( argc < 2 )
 	{
-		fprintf( stderr, "Error: usage: [tool] [ip address] [optional: no of lights] [optional (if present, first override (i.e. white on some systems))]\n" );
+		fprintf( stderr, "Error: usage: %s [ip address] [optional: no of lights] [optional (if present, first override (i.e. white on some systems))]\n", argv[0] );
 		return -1;
 	}
 	uint32_t frame = 0;
@@ -122,7 +125,7 @@ int main( int argc, char ** argv )
 //			hex=0xffffff;
 //			hex = HSVtoHEX( i*(1/12.) + frame*(1./48.), 1, 1.0 );
 //			hex = (((frame+i)%lights)>(lights-2))?0xffffff:0; //The worm.
-			hex = HSVtoHEX( i*.03 - frame*.04, 1,  (((((-i<<3)%256) - ((frame<<3)%256)+256)%256) ) /256.0*0.9-0.1); //Long, smooth, transitioning. 1.0 
+			hex = HSVtoHEX( i*.03 - frame*.04, 1,  (((((-i<<3)%256) - ((frame<<3)%256)+256)%256) ) /256.0*0.9-0.1); //Long, smooth, transitioning. 1.0
 
 
 			//For wall art.
@@ -154,7 +157,7 @@ int main( int argc, char ** argv )
 			buffer[0+i*3] = (hex>>8);
 			buffer[1+i*3] = (hex);
 			buffer[2+i*3] = (hex>>16);
-			
+
 		}
 
 		if( firstoverride >= 0 )
