@@ -1,9 +1,14 @@
-TARGET_OUT:=image.elf
-FW_FILES:=image.elf-0x00000.bin image.elf-0x40000.bin
-all : $(TARGET_OUT) $(FW_FILES)
+include makeconf.inc   # Look here for user configuration
 
+.PHONY : all clean cleanall netburn burnweb burn
+uniq = $(if $1,$(firstword $1) $(call uniq,$(filter-out $(firstword $1),$1)))
 
-SRCS:=driver/uart.c \
+FW_FILE1 = image.elf-0x00000.bin
+FW_FILE2 = image.elf-0x40000.bin
+TARGET = image.elf
+
+SRCS = \
+    driver/uart.c \
 	common/mystuff.c \
 	common/flash_rewriter.c \
 	common/http.c \
@@ -13,79 +18,57 @@ SRCS:=driver/uart.c \
 	common/mfs.c \
 	user/custom_commands.c \
 	user/ws2812_i2s.c \
-	user/user_main.c 
+	user/user_main.c
 
-GCC_FOLDER:=~/esp8266/esp-open-sdk/xtensa-lx106-elf
-ESPTOOL_PY:=~/esp8266/esptool/esptool.py
-SDK:=/home/cnlohr/esp8266/esp_iot_sdk_v1.5.1
-PORT:=/dev/ttyUSB0
-#PORT:=/dev/ttyACM0
+LIBS = main lwip ssl upgrade net80211 wpa phy lwip pp crypto
+INCL = $(SDK)/include myclib include . driver/include
 
-XTLIB:=$(SDK)/lib
-XTGCCLIB:=$(GCC_FOLDER)/lib/gcc/xtensa-lx106-elf/4.8.2/libgcc.a
-FOLDERPREFIX:=$(GCC_FOLDER)/bin
-PREFIX:=$(FOLDERPREFIX)/xtensa-lx106-elf-
-CC:=$(PREFIX)gcc
+CFLAGS = -mlongcalls -Os $(addprefix -I,$(INCL) $(call uniq, $(patsubst %/,%,$(dir $(SRCS))))) $(OPTS)
 
-CFLAGS:=-mlongcalls -I$(SDK)/include -Imyclib -Iinclude -Iuser -Os -I$(SDK)/include/ -Icommon -DICACHE_FLASH
+LDFLAGS_CORE = -Wl,--relax -Wl,--gc-sections -nostdlib -L$(XTLIB) \
+	-L$(XTGCCLIB) $(addprefix $(SDK)/lib/lib,$(addsuffix .a,$(LIBS))) \
+	$(XTGCCLIB) -T $(SDK)/ld/eagle.app.v6.ld
+#	-flto -Wl,--relax -Wl,--gc-sections
 
-#	   \
-#
+LINKFLAGS = $(LDFLAGS_CORE) -B$(XTLIB)
 
-LDFLAGS_CORE:=\
-	-nostdlib \
-	-Wl,--relax -Wl,--gc-sections \
-	-L$(XTLIB) \
-	-L$(XTGCCLIB) \
-	$(SDK)/lib/liblwip.a \
-	$(SDK)/lib/libssl.a \
-	$(SDK)/lib/libupgrade.a \
-	$(SDK)/lib/libnet80211.a \
-	$(SDK)/lib/liblwip.a \
-	$(SDK)/lib/libwpa.a \
-	$(SDK)/lib/libnet80211.a \
-	$(SDK)/lib/libphy.a \
-	$(SDK)/lib/libcrypto.a \
-	$(SDK)/lib/libmain.a \
-	$(SDK)/lib/libpp.a \
-	$(XTGCCLIB) \
-	-T $(SDK)/ld/eagle.app.v6.ld
+##########################################################################RULES
 
-LINKFLAGS:= \
-	$(LDFLAGS_CORE) \
-	-B$(XTLIB)
+all : $(FW_FILE1) $(FW_FILE2)
 
-#image.elf : $(OBJS)
-#	$(PREFIX)ld $^ $(LDFLAGS) -o $@
+$(FW_FILE1) $(FW_FILE2) : $(TARGET)
+	$(ESPTOOL_PY) elf2image $(TARGET)
 
-$(TARGET_OUT) : $(SRCS)
-	$(PREFIX)gcc $(CFLAGS) $^  -flto $(LINKFLAGS) -o $@
-	nm -S -n $(TARGET_OUT) > image.map
+$(TARGET) : $(SRCS)
+	$(CC) $(CFLAGS) $^ -flto $(LINKFLAGS) -o $@
+	#nm -S -n $(TARGET_OUT) > image.map
 	$(PREFIX)objdump -S $@ > image.lst
 
+ifeq ($(CHIP), 8285)
+burn : $(FW_FILE1) $(FW_FILE2)
+	($(ESPTOOL_PY) --port $(PORT) write_flash -fs 8m -fm dout 0x00000 0x00000.bin 0x40000 0x40000.bin)||(true)
+else ifeq ($(CHIP), 8266)
+burn : $(FW_FILE1) $(FW_FILE2)
+	($(ESPTOOL_PY) --port $(PORT) write_flash 0x00000 $(FW_FILE1) 0x40000 $(FW_FILE2))||(true)
+else
+	$(error Error: Unknown chip '$(CHIP)')
+endif
 
-
-$(FW_FILES): $(TARGET_OUT)
-	@echo "FW $@"
-	PATH=$(FOLDERPREFIX):$$PATH;$(ESPTOOL_PY) elf2image $(TARGET_OUT)
-
-burn : $(FW_FILES)
-	$(ESPTOOL_PY) --port $(PORT) write_flash -fm dout 0x00000 image.elf-0x00000.bin 0x40000 image.elf-0x40000.bin
-
-#If you have space, MFS should live at 0x100000, if you don't it can also live at
-#0x10000.  But, then it is limited to 180kB.  You might need to do this if you have a 512kB 
-#ESP variant.
-
-burnweb : web/page.mpfs
+burnweb :
+	@cd web && $(MAKE) $(MFLAGS) $(MAKEOVERRIDES) page.mpfs
 	($(ESPTOOL_PY) --port $(PORT) write_flash 0x10000 web/page.mpfs)||(true)
+#If you have space, MFS should live at 0x100000. It can also live at
+#0x10000. But, then it is limited to 180kB. You might need to do this if
+# you have a 512kB ESP variant.
 
-
-IP?=192.168.4.1
-
-netburn : image.elf $(FW_FILES)
-	web/execute_reflash $(IP) image.elf-0x00000.bin image.elf-0x40000.bin
+netburn : $(FW_FILE1) $(FW_FILE2)
+	@cd web && $(MAKE) $(MFLAGS) $(MAKEOVERRIDES) execute_reflash
+	web/execute_reflash $(IP) $(FW_FILE1) $(FW_FILE2)
 
 clean :
-	rm -rf user/*.o driver/*.o $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2)
+	$(RM) $(patsubst %.c,%.o,$(SRCS)) $(TARGET)
 
+purge : clean
+	@cd web && $(MAKE) $(MFLAGS) $(MAKEOVERRIDES) clean
+	$(RM) $(FW_FILE1) $(FW_FILE2)
 
