@@ -51,10 +51,12 @@ unsigned long HSVtoHEX( float hue, float sat, float value )
 int main( int argc, char ** argv )
 {
 	int firstoverride = -1;
+	unsigned lights = 186;
 	unsigned pattern = 0;
+	unsigned ws_sleep = WS_SLEEP;
 	if( argc < 2 )
 	{
-		fprintf( stderr, "Error: usage: %s [ip address] [optional: no of lights] [optional (if present, first override (i.e. white on some systems))] [pattern]\n", argv[0] );
+		fprintf( stderr, "Error: usage: %s ip [no. of light=186] [override 1st LED (i.e. white on some systems))=-1] [pattern=-1] [sleep seconds=%g]\n", argv[0], (double)ws_sleep );
 		return -1;
 	}
 	uint32_t frame = 0;
@@ -65,11 +67,10 @@ int main( int argc, char ** argv )
 	servaddr.sin_addr.s_addr=inet_addr(argv[1]);
 	servaddr.sin_port=htons(COM_PORT);
 
-	unsigned lights = 186;
-
 	if( argc >= 3 ) lights = atoi( argv[2] );
 	if( argc >= 4 ) firstoverride = atoi( argv[3] );
 	if( argc >= 5 ) pattern = atoi( argv[4] );
+	if( argc >= 6 ) ws_sleep = atoi( argv[5] );
 
 	printf( "Lights: %d\n", lights );
 
@@ -144,7 +145,7 @@ int main( int argc, char ** argv )
 		putc('.', stdout);
 		#endif
 		fflush( stdout );
-		usleep(WS_SLEEP);
+		usleep(ws_sleep);
 	}
 }
 
