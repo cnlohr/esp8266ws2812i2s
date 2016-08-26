@@ -12,8 +12,6 @@
 #include "commonservices.h"
 #include <mdns.h>
 
-#define PORT 7777
-
 #define procTaskPrio        0
 #define procTaskQueueLen    1
 
@@ -83,7 +81,7 @@ void user_init(void)
 {
 	uart_init(BIT_RATE_115200, BIT_RATE_115200);
 
-	uart0_sendStr("\r\n\033cesp8266 ws2812 driver\r\n");
+	uart0_sendStr("\r\nesp82XX Web-GUI\r\n" VERSSTR "\b");
 
 //Uncomment this to force a system restore.
 //	system_restore();
@@ -96,7 +94,7 @@ void user_init(void)
 	espconn_create( pUdpServer );
 	pUdpServer->type = ESPCONN_UDP;
 	pUdpServer->proto.udp = (esp_udp *)os_zalloc(sizeof(esp_udp));
-	pUdpServer->proto.udp->local_port = 7777;
+	pUdpServer->proto.udp->local_port = COM_PORT;
 	espconn_regist_recvcb(pUdpServer, udpserver_recv);
 
 	if( espconn_create( pUdpServer ) )
@@ -121,9 +119,9 @@ void user_init(void)
 	SetServiceName( "ws2812" );
 	AddMDNSName( "cn8266" );
 	AddMDNSName( "ws2812" );
-	AddMDNSService( "_http._tcp", "An ESP8266 Webserver", 80 );
-	AddMDNSService( "_ws2812._udp", "WS2812 Driver", 7777 );
-	AddMDNSService( "_cn8266._udp", "ESP8266 Backend", 7878 );
+	AddMDNSService( "_http._tcp", "An ESP8266 Webserver", WEB_PORT );
+	AddMDNSService( "_ws2812._udp", "WS2812 Driver", COM_PORT );
+	AddMDNSService( "_cn8266._udp", "ESP8266 Backend", BACKEND_PORT );
 
 	//Add a process
 	system_os_task(procTask, procTaskPrio, procTaskQueue, procTaskQueueLen);
@@ -140,7 +138,7 @@ void user_init(void)
 
 	printf( "Boot Ok.\n" );
 
- 
+
 	wifi_set_sleep_type(LIGHT_SLEEP_T);
 	wifi_fpm_set_sleep_type(LIGHT_SLEEP_T);
 
