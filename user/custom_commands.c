@@ -4,7 +4,6 @@
 #include <commonservices.h>
 #include "ws2812_i2s.h"
 #include "vars.h"
-#include "pattern.h"
 
 int ICACHE_FLASH_ATTR CustomCommand(char * buffer, int retsize, char *pusrdata, unsigned short len)
 {
@@ -33,7 +32,7 @@ int ICACHE_FLASH_ATTR CustomCommand(char * buffer, int retsize, char *pusrdata, 
 		return buffend-buffer;
 	}
 
-    case 'T': case 't': { //test
+    case 'T': case 't': { // set led-ranges over Web-UI
         printf("Color Data: ");
         int it;
         for(it=3; it<len; ++it)
@@ -41,9 +40,23 @@ int ICACHE_FLASH_ATTR CustomCommand(char * buffer, int retsize, char *pusrdata, 
         printf("\n");
         ws2812_push(pusrdata+3,len-3);
         ets_memcpy( last_leds, pusrdata+3, len );
-        last_led_count = len / 3;
+        last_led_count = (len-1) / 3;
+        pattern = PATTERN_NONE;
+        frame = 0;
     } break;
 
+
+    case 'P': case 'p': { // set pattern to be repeated
+        if( len < 5 || pusrdata[3] > '9' || pusrdata[3]<'0' ) break;
+        pusrdata+=3;
+        int tmp_pattern = safe_atoi(pusrdata);
+        unsigned it;
+        for(it=0; it<len-3 && *pusrdata !='\t'; ++it);
+        pusrdata+=it;
+        last_led_count = safe_atoi(pusrdata);
+        printf("Pattern: %i; NumLeds: %i", tmp_pattern, last_led_count);
+        frame = 0;
+    } break;
 
 	}
 	return -1;

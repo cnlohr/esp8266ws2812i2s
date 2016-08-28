@@ -1,7 +1,13 @@
 #include <stdint.h>
+#ifndef NO_CTYPES
 #include <c_types.h>
-#include <math.h>
+#endif
 #include "pattern.h"
+
+float my_fmod(float arg1, float arg2) {
+    int full = (int)(arg1/arg2);
+    return arg1 - full*arg2;
+}
 
 uint64_t HSVtoHEX( float hue, float sat, float value )
 {
@@ -9,8 +15,8 @@ uint64_t HSVtoHEX( float hue, float sat, float value )
     float pr,  pg, pb, avg;    pr=pg=pb=avg=0;
     short ora, og, ob;         ora=og=ob=0;
 
-    float ro = fmod( hue * 6, 6. );
-    ro = fmod( ro + 6 + 1, 6 ); //Hue was 60* off...
+    float ro = my_fmod( hue * 6, 6. );
+    ro = my_fmod( ro + 6 + 1, 6 ); //Hue was 60* off...
 
     //yellow->red
     if     ( ro < 1 ) { pr = 1;         pg = 1. - ro; }

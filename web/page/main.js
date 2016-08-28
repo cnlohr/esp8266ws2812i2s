@@ -63,7 +63,7 @@ function KickLEDs()
 			var range = toks[i].split("-");
 			if( range.length == 1 ) {
 				var idx = parseInt(toks[i]);
-				if(idx<numLEDs) leds[idx] = color;
+				if(idx<=numLEDs) leds[idx] = color;
 			} else {
 				var min = parseInt(range[0]);
 				var max = parseInt(range[1]);
@@ -98,12 +98,13 @@ function KickLEDs()
 	// Select a pattern to be used continously
 	$('#LEDPbtn').click( function(e) {
 		var val = $('#LEDSelect').val();
+		var numLEDs = $('#LEDNum').val();
 		if( ! val.match(/^\d+$/) ) {
 			$('#LEDSelect').css( "background-color", "#ff0000");
 			return false;
 		}
 		$('#LEDSelect').css( "background-color", "#ffffff");
-		QueueOperation( "CP\t" + val );
+		QueueOperation( "CP\t" + val + "\t" + numLEDs );
 		return true;
 	});
 

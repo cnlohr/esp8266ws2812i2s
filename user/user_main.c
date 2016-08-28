@@ -12,6 +12,7 @@
 #include "commonservices.h"
 #include <mdns.h>
 #include "vars.h"
+#include "pattern.h"
 
 #define procTaskPrio        0
 #define procTaskQueueLen    1
@@ -20,6 +21,9 @@ static volatile os_timer_t some_timer;
 static struct espconn *pUdpServer;
 uint8_t last_leds[512*3] = {0};
 int last_led_count = 0;
+uint8_t pattern = PATTERN_NONE;
+uint32_t frame = 0;
+uint32_t ws_sleep = WS_SLEEP;
 
 
 //int ICACHE_FLASH_ATTR StartMDNS();
@@ -51,6 +55,18 @@ static void ICACHE_FLASH_ATTR procTask(os_event_t *events)
 static void ICACHE_FLASH_ATTR myTimer(void *arg)
 {
 	CSTick( 1 );
+
+    if(pattern == PATTERN_NONE) return;
+
+    int it;
+    for(it=0; it<last_led_count; ++it) {
+        uint32_t hex = hex_pattern( pattern, it, last_led_count, frame*100 );
+        last_leds[3*it+0] = (hex>>8);
+        last_leds[3*it+1] = (hex);
+        last_leds[3*it+2] = (hex>>16);
+        frame += ws_sleep/100;
+    }
+    ws2812_push( (char*)last_leds, 3*last_led_count);
 }
 
 
@@ -66,11 +82,10 @@ udpserver_recv(void *arg, char *pusrdata, unsigned short len)
 
 	len -= 3;
 	if( len > sizeof(last_leds) + 3 )
-	{
 		len = sizeof(last_leds) + 3;
-	}
 	ets_memcpy( last_leds, pusrdata+3, len );
 	last_led_count = len / 3;
+    pattern = PATTERN_NONE;
 }
 
 void ICACHE_FLASH_ATTR charrx( uint8_t c )
