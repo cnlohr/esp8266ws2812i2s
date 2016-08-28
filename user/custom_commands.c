@@ -1,10 +1,10 @@
 //Copyright 2015 <>< Charles Lohr, see LICENSE file.
 
+#include <esp82xxutil.h>
 #include <commonservices.h>
-
-extern uint8_t last_leds[512*3];
-extern int last_led_count;
-
+#include "ws2812_i2s.h"
+#include "vars.h"
+#include "pattern.h"
 
 int ICACHE_FLASH_ATTR CustomCommand(char * buffer, int retsize, char *pusrdata, unsigned short len)
 {
@@ -32,6 +32,17 @@ int ICACHE_FLASH_ATTR CustomCommand(char * buffer, int retsize, char *pusrdata, 
 		}
 		return buffend-buffer;
 	}
+
+    case 'T': case 't': { //test
+        printf("Color Data: ");
+        int it;
+        for(it=3; it<len; ++it)
+            printf("%x ", pusrdata[it]);
+        printf("\n");
+        ws2812_push(pusrdata+3,len-3);
+        ets_memcpy( last_leds, pusrdata+3, len );
+        last_led_count = len / 3;
+    } break;
 
 
 	}

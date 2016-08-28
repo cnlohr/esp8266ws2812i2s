@@ -11,14 +11,15 @@
 #include "ws2812_i2s.h"
 #include "commonservices.h"
 #include <mdns.h>
+#include "vars.h"
 
 #define procTaskPrio        0
 #define procTaskQueueLen    1
 
 static volatile os_timer_t some_timer;
 static struct espconn *pUdpServer;
-uint8_t last_leds[512*3];
-int last_led_count;
+uint8_t last_leds[512*3] = {0};
+int last_led_count = 0;
 
 
 //int ICACHE_FLASH_ATTR StartMDNS();

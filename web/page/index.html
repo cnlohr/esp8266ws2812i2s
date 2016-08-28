@@ -37,6 +37,9 @@ td { vertical-align: top; }
 <div id=LEDs class="collapsible">
 <table width=100% border=1><tr><td id=LEDCanvasHolder><CANVAS id=LEDCanvas width=512 height=100></CANVAS></td>
 <td><input type=button onclick="ToggleLEDPause();" id=LEDPauseButton value="|| / >"></td></tr></table>
+<input type=color id=LEDColor>&nbsp;&nbsp;&nbsp;Pattern/Range: <input type=text id=LEDSelect>
+&nbsp;&nbsp;&nbsp;#LEDs: <input type=number min=0 value=4 id=LEDNum><input type=button value="Set Color" id=LEDCbtn><input type=button value="Set Pattern (Work in Progress)" id=LEDPbtn>
+<p style="font-size:70%;font-style: italic">Patterns can include individual LEDS or ranges of LEDs separated by commata, e.g. "1-3,7,20-35". You can also select colors by clicking inside the color display. If you set a pattern, use a low positive integer.</p>
 </div></td></tr>
 
 
@@ -51,5 +54,3 @@ td { vertical-align: top; }
 <div id=SystemMessage>...</div>
 </body>
 </html>
-
-
