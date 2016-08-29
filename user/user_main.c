@@ -60,12 +60,13 @@ static void ICACHE_FLASH_ATTR myTimer(void *arg)
 
     int it;
     for(it=0; it<last_led_count; ++it) {
-        uint32_t hex = hex_pattern( pattern, it, last_led_count, frame*100 );
+        uint32_t hex = hex_pattern( pattern, it, last_led_count, frame*80 );
         last_leds[3*it+0] = (hex>>8);
         last_leds[3*it+1] = (hex);
         last_leds[3*it+2] = (hex>>16);
-        frame += ws_sleep/100;
     }
+    frame += ws_sleep/80;
+    debug("Frame: %i", (int)frame);
     ws2812_push( (char*)last_leds, 3*last_led_count);
 }
 

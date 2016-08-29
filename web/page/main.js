@@ -88,9 +88,7 @@ function KickLEDs()
 			} else {
 				qStr[byte++] = 0; qStr[byte++] = 0; qStr[byte++] = 1;
 			}
-		}
-		console.log(leds);
-		console.log(qStr);
+		} // console.log(leds);	console.log(qStr);
 		QueueOperation( qStr );
 		return true;
 	});
@@ -98,13 +96,20 @@ function KickLEDs()
 	// Select a pattern to be used continously
 	$('#LEDPbtn').click( function(e) {
 		var val = $('#LEDSelect').val();
-		var numLEDs = $('#LEDNum').val();
+		var numLEDs = parseInt($('#LEDNum').val());
 		if( ! val.match(/^\d+$/) ) {
 			$('#LEDSelect').css( "background-color", "#ff0000");
 			return false;
 		}
 		$('#LEDSelect').css( "background-color", "#ffffff");
-		QueueOperation( "CP\t" + val + "\t" + numLEDs );
+		var qStr = new Uint8Array(7);
+		var byte = 0;
+		qStr[byte++] = "C".charCodeAt(); qStr[byte++] = "P".charCodeAt();
+		qStr[byte++] = parseInt(val);
+		qStr[byte++] = numLEDs>>8;
+		qStr[byte++] = numLEDs%256;
+		qStr[byte++] = 0;
+		QueueOperation( qStr );
 		return true;
 	});
 
