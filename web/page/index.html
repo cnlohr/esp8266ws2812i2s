@@ -1,7 +1,4 @@
-<html>
-<!-- Copyright (C) 2015 <>< Charles Lohr, see LICENSE file for more info. -->
-<head>
-<title>{{PAGE_TITLE}}</title>
+<html><head><title>{{PAGE_TITLE}}</title>
 <script language="javascript" type="text/javascript" src={{PAGE_JQUERYFL}}></script>
 <script language="javascript" type="text/javascript" src=menuinterface.js></script>
 {{PAGE_SCRIPT}}
@@ -15,42 +12,37 @@ td { vertical-align: top; }
 .dragandrophandler { border:2px dotted #0B85A1; color:#92AAB0;vertical-align:middle;padding:10px 10px 10 10px;margin-bottom:10px;font-size:200%;}
 .unsaved-input { border: 2px solid pink; border-radius: 7px; }
 </style>
-</head>
-<body>
-<h2>{{PAGE_HEADING}}</h2>
-<hr>
+</head><body>
 
-<table id="MainMenu">
+<h2>{{PAGE_HEADING}}</h2><hr>
 
-<tbody>
+<table id="MainMenu"><tbody>
 
 <tr><td width=1>
 <input type=submit onclick="ShowHideEvent( 'Introduction' );" value="Introduction"></td><td>
-<div id=Introduction class="collapsible">
-<table border=1><tr><td>
-<p>{{PAGE_INFO}}</p>
-</div></td></tr></table></td></tr>
+<div id=Introduction class="collapsible"><table border=1><tr><td><p>{{PAGE_INFO}}</p></td></tr></table></div>
+</td></tr>
 
-
-<tr><td width=1>
-<input type=submit onclick="ShowHideEvent( 'LEDs' ); KickLEDs();" value="LEDs"></td><td>
+<tr><td width=1><input type=submit onclick="ShowHideEvent( 'LEDs' ); KickLEDs();" value="LEDs"></td><td>
 <div id=LEDs class="collapsible">
 <table width=100% border=1><tr><td id=LEDCanvasHolder><CANVAS id=LEDCanvas width=512 height=100></CANVAS></td>
 <td><input type=button onclick="ToggleLEDPause();" id=LEDPauseButton value="|| / >"></td></tr></table>
-<input type=color id=LEDColor>&nbsp;&nbsp;&nbsp;Pattern/Range: <input type=text id=LEDSelect value=1-4>
-&nbsp;&nbsp;&nbsp;#LEDs: <input type=number min=0 value=4 id=LEDNum><input type=button value="Set Color" id=LEDCbtn><input type=button value="Set Pattern (Work in Progress)" id=LEDPbtn>
-<p style="font-size:70%;font-style: italic">Patterns can include individual LEDS or ranges of LEDs separated by commata, e.g. "1-3,7,20-35". You can also select colors by clicking inside the color display. If you set a pattern, use a low positive integer.</p>
-</div></td></tr>
+Select LEDs/Pattern: <input type=text id=LEDSelect value=1-4>  <br>
+#LEDs: <input type=number min=0 value=4 id=LEDNum style="width:5.5em;">
+<input type=color id=LEDColor> <input type=button value="Set Color" id=LEDCbtn> <input type=button value="Set Pattern" id=LEDPbtn>
+<p style="font-size:70%;font-style: italic">Patterns can include individual LEDs or ranges of LEDs separated by commata, e.g. "1-3,7,20-35".
+You can select colors via the color-picker or by clicking a color inside the color display.
+If you set a pattern, use a low positive integer.
+"#LEDs" is the total number of LEDs connected to the esp8266 and must be provided.</p>
+</div>
+</td></tr>
 
-
-</tbody>
-</table>
+</tbody></table>
 
 <font size=-2>
 <p>Copyright (C) 2015-2016 &lt&gt&lt Charles Lohr, See LICENSE file for more info.</p>
-<p id=version><font size=-2>{{VERSSTR}}</font></p>
-<p><a href={{PROJECT_URL}}><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyRpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoTWFjaW50b3NoKSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo3QTI1MDRGRDUyREUxMUUyOTMxM0QzQThENTMyMjYwNSIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDo3QTI1MDRGRTUyREUxMUUyOTMxM0QzQThENTMyMjYwNSI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOjdBMjUwNEZCNTJERTExRTI5MzEzRDNBOEQ1MzIyNjA1IiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjdBMjUwNEZDNTJERTExRTI5MzEzRDNBOEQ1MzIyNjA1Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+ri2cwgAAAUFJREFUeNqM0slKA0EQxvFywLi8gygiUQYi8exJcQXFt/CaF1GCBvUBfAG9iYqKBLxqIAmCeHDHiyCIGy7/hm+kM5oZC36ZUF3dXdPTZr8jhzWc4g1PqCqXs4Rowyo+sI8CZqSgnBtbUW1DZFRwhZGETdzYNXY15ydce5foQmfCAu3oVq2bYy16r2OM4Q4VrKOMXtWcI495jKIDW8rZEg60wxC+UkSveIhiwM8kNpUct/SIajbUtb1iVsnKPzq4UO0cHgNvwOIn2ySiGjfnM9ABZb0O0uJEz6y+hi3iSMm8bl6z9t3rDqvWzVlwf0K8Y0oD/VhG3Zt4pls6qJppzRmI2irhHn1eq2VvgaqX78GNNmk4mB1dpAnlHmLtmz7brS5R5q9rWlJre3iJLbCtsSJak0451MHW8Cw1HVgYL/4WYAC89WouVF+p+wAAAABJRU5ErkJggg==" style="height: 1em;" alt="github-logo">{{PROJECT_NAME}}</a></p>
+<p><a href={{PROJECT_URL}}><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyRpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoTWFjaW50b3NoKSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo3QTI1MDRGRDUyREUxMUUyOTMxM0QzQThENTMyMjYwNSIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDo3QTI1MDRGRTUyREUxMUUyOTMxM0QzQThENTMyMjYwNSI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOjdBMjUwNEZCNTJERTExRTI5MzEzRDNBOEQ1MzIyNjA1IiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjdBMjUwNEZDNTJERTExRTI5MzEzRDNBOEQ1MzIyNjA1Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+ri2cwgAAAUFJREFUeNqM0slKA0EQxvFywLi8gygiUQYi8exJcQXFt/CaF1GCBvUBfAG9iYqKBLxqIAmCeHDHiyCIGy7/hm+kM5oZC36ZUF3dXdPTZr8jhzWc4g1PqCqXs4Rowyo+sI8CZqSgnBtbUW1DZFRwhZGETdzYNXY15ydce5foQmfCAu3oVq2bYy16r2OM4Q4VrKOMXtWcI495jKIDW8rZEg60wxC+UkSveIhiwM8kNpUct/SIajbUtb1iVsnKPzq4UO0cHgNvwOIn2ySiGjfnM9ABZb0O0uJEz6y+hi3iSMm8bl6z9t3rDqvWzVlwf0K8Y0oD/VhG3Zt4pls6qJppzRmI2irhHn1eq2VvgaqX78GNNmk4mB1dpAnlHmLtmz7brS5R5q9rWlJre3iJLbCtsSJak0451MHW8Cw1HVgYL/4WYAC89WouVF+p+wAAAABJRU5ErkJggg==" style="height: 1em;" alt="github-logo">{{PROJECT_NAME}}</a> - {{VERSSTR}}</p>
 </font>
 <div id=SystemMessage>...</div>
-</body>
-</html>
+
+</body></html>

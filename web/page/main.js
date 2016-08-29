@@ -49,9 +49,9 @@ function KickLEDs()
 	// Set LED color via Button
 	$('#LEDCbtn').click( function(e) {
 		var val = $('#LEDSelect').val();
-		if( ! val.match(/^\d+(-\d+)?(,\d+(-\d+)?)*$/) ) {
-			$('#LEDSelect').css( "background-color", "#ff0000");
-			return false;
+		if( ! val.match(/^\d+(-\d+)?(#[a-zA-Z0-9]{6,6})?(,\d+(-\d+)?(#[a-zA-Z0-9]{6,6})?)*$/) ) {
+		    $('#LEDSelect').css( "background-color", "#ff0000");
+		    return false;
 		}
 		$('#LEDSelect').css( "background-color", "#ffffff");
 		var numLEDs = parseInt( $('#LEDNum').val() );
@@ -60,17 +60,19 @@ function KickLEDs()
 		var color = document.getElementById('LEDColor').value;
 		color = color.replace('#','');
 		for(var i=0; i<toks.length; ++i) {
-			var range = toks[i].split("-");
-			if( range.length == 1 ) {
-				var idx = parseInt(toks[i]);
-				if(idx<=numLEDs) leds[idx] = color;
-			} else {
-				var min = parseInt(range[0]);
-				var max = parseInt(range[1]);
-				if( min > max ) { var tmp=min; min=max; max=tmp; }
-				for(var j=min; j<=max && j<=numLEDs; ++j)
-					leds[j] = color;
-			}
+		    var colsplt = toks[i].split("#");
+		    var rangesplt = colsplt[0].split("-");
+		    if( colsplt.length > 1 ) color = colsplt[1];
+		    if( rangesplt.length < 2 ) {
+		        var idx = parseInt(rangesplt[0]);
+		        if(idx<=numLEDs) leds[idx] = color;
+		    } else {
+		        var min = parseInt(rangesplt[0]);
+		        var max = parseInt(rangesplt[1]);
+		        if( min > max ) { var tmp=min; min=max; max=tmp; }
+		        for(var j=min; j<=max && j<=numLEDs; ++j)
+		            leds[j] = color;
+		    }
 		}
 
 		var qStr = new Uint8Array(3*numLEDs+3);
