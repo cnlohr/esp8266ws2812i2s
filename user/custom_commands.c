@@ -56,6 +56,9 @@ int ICACHE_FLASH_ATTR CustomCommand(char * buffer, int retsize, char *pusrdata, 
                 (int)pattern, (int)c1, (int)c2, (int)last_led_count
             );
             frame = 0;
+            SETTINGS.UserData[0] = (char)pattern;
+            *((uint16_t*)(SETTINGS.UserData+1)) = last_led_count;
+            CSSettingsSave();
             return buffend-buffer;
         } break;
 

@@ -108,7 +108,9 @@ void user_init(void)
 //	system_restore();
 
 	CSSettingsLoad( 0 );
-	CSPreInit();
+    pattern = (uint8_t)SETTINGS.UserData[0];
+    last_led_count = *((uint16_t*)(SETTINGS.UserData+1));
+    CSPreInit();
 
     pUdpServer = (struct espconn *)os_zalloc(sizeof(struct espconn));
 	ets_memset( pUdpServer, 0, sizeof( struct espconn ) );
