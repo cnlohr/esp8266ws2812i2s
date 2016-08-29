@@ -155,7 +155,7 @@ void user_init(void)
 	//Pattern Timer example
 	os_timer_disarm(&pattern_timer);
 	os_timer_setfn(&pattern_timer, (os_timer_func_t *)patternTimer, NULL);
-	os_timer_arm(&pattern_timer, 10, 1);
+	os_timer_arm(&pattern_timer, 20, 1); //~50 Hz
 
 	ws2812_init();
 
