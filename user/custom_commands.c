@@ -4,6 +4,7 @@
 #include <commonservices.h>
 #include "ws2812_i2s.h"
 #include "vars.h"
+#include "pattern.h"
 
 int ICACHE_FLASH_ATTR CustomCommand(char * buffer, int retsize, char *pusrdata, unsigned short len)
 {

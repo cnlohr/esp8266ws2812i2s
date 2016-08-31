@@ -48,16 +48,13 @@ uint32_t hex_pattern( uint8_t pattern, uint16_t light, uint16_t lights, uint32_t
 
     switch( pattern ) {
         //For button
+        case PATTERN_CONST: break;
         case 1: hex = (light == (frame % lights))?0xFFFFFF:0x000000; break;
-        case 2: hex=0xffffff; break;
         case 3: hex = HSVtoHEX( light*(1/12.) + frame*(1./48.), 1, 1.0 ); break;
         case 4: hex = ((int32_t)((frame+light)%lights)>(lights-2))?0xffffff:0; break; //The worm.
         case 5: hex = HSVtoHEX( light*.03 - frame*.04, 1,  (((((-light<<3)%256) - ((frame<<3)%256)+256)%256) ) /256.0*0.9-0.1); break; //Long, smooth, transitioning. 1.0
 
         //For wall art.
-        case 6: hex = 0x404040; break;
-        //0.50 = overload. 0.45 = overheat? =0.40 = HOT
-
         case 7: hex = (((frame+light)%186)>160)?0xff8f8f:0; break; //The worm.
         case 8: hex = (((frame+light)%186)>130)?0x0000ff:0; break; //The red worm.
         case 9: hex = HSVtoHEX( light*.005 - frame*.001, 1,  ((((-light%256) - ((frame>>1)%256)+256)%256) ) /256.0*1.2-0.1); break;
@@ -71,8 +68,7 @@ uint32_t hex_pattern( uint8_t pattern, uint16_t light, uint16_t lights, uint32_t
         //Chaser
         case 13: hex = HSVtoHEX( light*.002 + frame*.002, 4, 1.0 );  break; //0.50 = overload. 0.45 = overheat? =0.40 = HOT
         case 14: hex = HSVtoHEX( frame*.001, 1.0,  1.0);  break; //Long, smooth, transitioning. full-brigth
-        case 15: hex = 0x0000ff;  break;
-        case 16: hex = HSVtoHEX( light * 0.0002+.3333, 1, 1.0 ); break;
+        case PATTERN_NONE: break;
         default: hex = HSVtoHEX( light*.05 + frame*.01, 1, 1.0 );
     }
 

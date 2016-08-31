@@ -29,29 +29,24 @@ uint32_t ws_sleep = WS_SLEEP;
 
 //int ICACHE_FLASH_ATTR StartMDNS();
 
-void user_rf_pre_init(void)
-{
-	//nothing.
-}
+
+void user_rf_pre_init(void) {/*nothing.*/}
 
 
-char * strcat( char * dest, char * src )
-{
-	return strcat(dest, src );
-}
+char * strcat( char * dest, char * src ) { return strcat(dest, src ); }
 
 
 
 //Tasks that happen all the time.
-
 os_event_t    procTaskQueue[procTaskQueueLen];
-
 static void ICACHE_FLASH_ATTR procTask(os_event_t *events)
 {
 	CSTick( 0 );
 	system_os_post(procTaskPrio, 0, 0 );
 }
 
+
+//Display pattern on connected LEDs
 static void ICACHE_FLASH_ATTR patternTimer(void *arg)
 {
     if(pattern == PATTERN_NONE) return;
@@ -67,6 +62,7 @@ static void ICACHE_FLASH_ATTR patternTimer(void *arg)
     debug("Frame: %i", (int)frame);
     ws2812_push( (char*)last_leds, 3*last_led_count);
 }
+
 
 //Timer event.
 static void ICACHE_FLASH_ATTR myTimer(void *arg)
@@ -93,10 +89,9 @@ udpserver_recv(void *arg, char *pusrdata, unsigned short len)
     pattern = PATTERN_NONE;
 }
 
-void ICACHE_FLASH_ATTR charrx( uint8_t c )
-{
-	//Called from UART.
-}
+
+void ICACHE_FLASH_ATTR charrx( uint8_t c ) {/*Called from UART.*/}
+
 
 void user_init(void)
 {
@@ -121,13 +116,10 @@ void user_init(void)
 	espconn_regist_recvcb(pUdpServer, udpserver_recv);
 
 	if( espconn_create( pUdpServer ) )
-	{
-		while(1) { uart0_sendStr( "\r\nFAULT\r\n" ); }
-	}
+		while(1)
+            uart0_sendStr( "\r\nFAULT\r\n" );
 
 	CSInit();
-
-
 
 	//Set GPIO16 for INput
 	WRITE_PERI_REG(PAD_XPD_DCDC_CONF,
@@ -161,11 +153,7 @@ void user_init(void)
 
 	ws2812_init();
 
-	uint8_t ledout[] = { 0x10, 0x10, 0x10 };
-	ws2812_push( ledout, sizeof( ledout ) );
-
 	printf( "Boot Ok.\n" );
-
 
 	wifi_set_sleep_type(LIGHT_SLEEP_T);
 	wifi_fpm_set_sleep_type(LIGHT_SLEEP_T);
@@ -175,12 +163,5 @@ void user_init(void)
 
 
 //There is no code in this project that will cause reboots if interrupts are disabled.
-void EnterCritical()
-{
-}
-
-void ExitCritical()
-{
-}
-
-
+void EnterCritical() {}
+void ExitCritical() {}
