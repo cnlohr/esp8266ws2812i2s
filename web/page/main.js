@@ -32,7 +32,6 @@ function KickLEDs()
 	// Validate Number of LEDS
 	$('#LEDNum').change( function(e) {
 		var val = parseInt( $('#LEDNum').val() );
-		console.log(val);
 		if( val<0 || val>512 || isNaN(val) ) $('#LEDNum').val(4);
 	});
 
@@ -91,7 +90,9 @@ function KickLEDs()
 				qStr[byte++] = rVal;
 				qStr[byte++] = bVal;
 			} else {
-				qStr[byte++] = 0; qStr[byte++] = 0; qStr[byte++] = 1;
+				qStr[byte++] = parseInt(led_data.substr((i-1)*6+0, 2), 16);
+				qStr[byte++] = parseInt(led_data.substr((i-1)*6+2, 2), 16);
+				qStr[byte++] = parseInt(led_data.substr((i-1)*6+4, 2), 16);
 			}
 		} // console.log(leds);	console.log(qStr);
 		QueueOperation( qStr );
