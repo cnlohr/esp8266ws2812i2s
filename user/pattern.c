@@ -23,7 +23,7 @@ uint64_t HSVtoHEX( float hue, float sat, float value )
     else if( ro < 2 ) { pr = 1;         pb = ro - 1.; }
     else if( ro < 3 ) { pr = 3. - ro;   pb = 1;       }
     else if( ro < 4 ) { pb = 1;         pg = ro - 3;  }
-    else if( ro < 5 ) { pb = 5 - ro;    pg = 1;       }
+    else if( ro < 5 ) { pb = 5  - ro;   pg = 1;       }
     else              { pg = 1;         pr = ro - 5;  }
 
     //Actually, above math is backwards, oops!
@@ -48,27 +48,27 @@ uint32_t hex_pattern( uint8_t pattern, uint16_t light, uint16_t lights, uint32_t
 
     switch( pattern ) {
         //For button
-        case PATTERN_CONST: break;
+        case PTRN_CONST: break;
         case 1: hex = (light == (frame % lights))?0xFFFFFF:0x000000; break;
-        case 3: hex = HSVtoHEX( light*(1/12.) + frame*(1./48.), 1, 1.0 ); break;
-        case 4: hex = ((int32_t)((frame+light)%lights)>(lights-2))?0xffffff:0; break; //The worm.
-        case 5: hex = HSVtoHEX( light*.03 - frame*.04, 1,  (((((-light<<3)%256) - ((frame<<3)%256)+256)%256) ) /256.0*0.9-0.1); break; //Long, smooth, transitioning. 1.0
+        case 2: hex = HSVtoHEX( light*(1/12.) + frame*(1./48.), 1, 1.0 ); break;
+        case 3: hex = ((int32_t)((frame+light)%lights)>(lights-2))?0xffffff:0; break; //The worm.
+        case 4: hex = HSVtoHEX( light*.03 - frame*.04, 1,  (((((-light<<3)%256) - ((frame<<3)%256)+256)%256) ) /256.0*0.9-0.1); break; //Long, smooth, transitioning. 1.0
 
         //For wall art.
-        case 7: hex = (((frame+light)%186)>160)?0xff8f8f:0; break; //The worm.
-        case 8: hex = (((frame+light)%186)>130)?0x0000ff:0; break; //The red worm.
-        case 9: hex = HSVtoHEX( light*.005 - frame*.001, 1,  ((((-light%256) - ((frame>>1)%256)+256)%256) ) /256.0*1.2-0.1); break;
-        case 10: hex = HSVtoHEX( light*.00500 + ((int)(frame*0.42))*.17, 1, 0.40 ); break;//Fiesta
+        case 5: hex = (((frame+light)%186)>160)?0xff8f8f:0; break; //The worm.
+        case 6: hex = (((frame+light)%186)>130)?0x0000ff:0; break; //The red worm.
+        case 7: hex = HSVtoHEX( light*.005 - frame*.001, 1,  ((((-light%256) - ((frame>>1)%256)+256)%256) ) /256.0*1.2-0.1); break;
+        case 8: hex = HSVtoHEX( light*.00500 + ((int)(frame*0.42))*.17, 1, 0.40 ); break;//Fiesta
 
         //and my favorite:
-        case 11: hex = HSVtoHEX( light*.001 - frame*.001, 1,  ((((light%256) - ((frame>>1)%256)+256)%256) ) /256.0*1.5-0.1); break; //Long, smooth, transitioning. 1.0 overloads.  Trying 0.9. If 0.9 works, should back off.
+        case 9: hex = HSVtoHEX( light*.001 - frame*.001, 1,  ((((light%256) - ((frame>>1)%256)+256)%256) ) /256.0*1.5-0.1); break; //Long, smooth, transitioning. 1.0 overloads.  Trying 0.9. If 0.9 works, should back off.
 
-        case 12: hex = HSVtoHEX( light*0.005376344 - frame*.001, 1.3,  1.0); break; //Long, smooth, transitioning. full-brigth
+        case 10: hex = HSVtoHEX( light*0.005376344 - frame*.001, 1.3,  1.0); break; //Long, smooth, transitioning. full-brigth
 
         //Chaser
-        case 13: hex = HSVtoHEX( light*.002 + frame*.002, 4, 1.0 );  break; //0.50 = overload. 0.45 = overheat? =0.40 = HOT
-        case 14: hex = HSVtoHEX( frame*.001, 1.0,  1.0);  break; //Long, smooth, transitioning. full-brigth
-        case PATTERN_NONE: break;
+        case 12: hex = HSVtoHEX( light*.002 + frame*.002, 4, 1.0 );  break; //0.50 = overload. 0.45 = overheat? =0.40 = HOT
+        case 13: hex = HSVtoHEX( frame*.001, 1.0,  1.0);  break; //Long, smooth, transitioning. full-brigth
+        case PTRN_NONE: break;
         default: hex = HSVtoHEX( light*.05 + frame*.01, 1, 1.0 );
     }
 

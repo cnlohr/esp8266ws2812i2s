@@ -20,11 +20,11 @@
 static volatile os_timer_t some_timer;
 static volatile os_timer_t pattern_timer;
 static struct espconn *pUdpServer;
+usr_conf_t * UsrCfg = (usr_conf_t*)(SETTINGS.UserData);
 uint8_t last_leds[512*3] = {0};
 int last_led_count = 0;
 uint8_t pattern = PATTERN_NONE;
 uint32_t frame = 0;
-uint32_t ws_sleep = WS_SLEEP;
 
 
 //int ICACHE_FLASH_ATTR StartMDNS();
@@ -58,7 +58,7 @@ static void ICACHE_FLASH_ATTR patternTimer(void *arg)
         last_leds[3*it+1] = (hex);
         last_leds[3*it+2] = (hex>>16);
     }
-    frame ++;
+    frame++;
     debug("Frame: %i", (int)frame);
     ws2812_push( (char*)last_leds, 3*last_led_count);
 }
@@ -86,7 +86,7 @@ udpserver_recv(void *arg, char *pusrdata, unsigned short len)
 		len = sizeof(last_leds) + 3;
 	ets_memcpy( last_leds, pusrdata+3, len );
 	last_led_count = len / 3;
-    pattern = PATTERN_NONE;
+    pattern = PTRN_NONE;
 }
 
 

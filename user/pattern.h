@@ -1,11 +1,11 @@
 #ifndef _PATTERN_H
 #define _PATTERN_H
 
-#ifndef WS_SLEEP
-    #define WS_SLEEP 14000
-#endif
-#define PATTERN_NONE 255
-#define PATTERN_CONST 0
+enum patterns{
+    PTRN_NONE=0,
+    PTRN_DEFAULT=254,
+    PTRN_CONST=255 ///< Constant color
+}; ///< Special patterns for connected LEDs
 
 uint64_t HSVtoHEX( float hue, float sat, float value );
 

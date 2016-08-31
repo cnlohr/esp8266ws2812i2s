@@ -41,7 +41,7 @@ int ICACHE_FLASH_ATTR CustomCommand(char * buffer, int retsize, char *pusrdata, 
             ws2812_push(pusrdata+3,len-3);
             ets_memcpy( last_leds, pusrdata+3, len );
             last_led_count = (len-1) / 3;
-            pattern = PATTERN_NONE;
+            pattern = PTRN_NONE;
             frame = 0;
         } break;
 
