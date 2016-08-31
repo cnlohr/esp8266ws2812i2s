@@ -43,12 +43,12 @@ uint64_t HSVtoHEX( float hue, float sat, float value )
     return (ob<<16) | (og<<8) | ora;
 }
 
-uint32_t hex_pattern( uint8_t pattern, uint16_t light, uint16_t lights, uint32_t frame ) {
-    uint32_t hex;
+uint32_t hex_pattern( uint8_t pattern, uint16_t light, uint16_t lights, uint32_t frame, uint8_t clr[3] ) {
+    uint32_t hex = 0;
 
     switch( pattern ) {
         //For button
-        case PTRN_CONST: break;
+        case PTRN_CONST: if( clr != NULL ) hex = clr[0]+clr[1]<<8+clr[2]<<16; break;
         case 1: hex = (light == (frame % lights))?0xFFFFFF:0x000000; break;
         case 2: hex = HSVtoHEX( light*(1/12.) + frame*(1./48.), 1, 1.0 ); break;
         case 3: hex = ((int32_t)((frame+light)%lights)>(lights-2))?0xffffff:0; break; //The worm.

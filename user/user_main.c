@@ -22,8 +22,6 @@ static volatile os_timer_t pattern_timer;
 static struct espconn *pUdpServer;
 usr_conf_t * UsrCfg = (usr_conf_t*)(SETTINGS.UserData);
 uint8_t last_leds[512*3] = {0};
-int last_led_count = 0;
-uint8_t pattern = PATTERN_NONE;
 uint32_t frame = 0;
 
 
@@ -49,18 +47,18 @@ static void ICACHE_FLASH_ATTR procTask(os_event_t *events)
 //Display pattern on connected LEDs
 static void ICACHE_FLASH_ATTR patternTimer(void *arg)
 {
-    if(pattern == PATTERN_NONE) return;
+    if(UsrCfg->ptrn == PTRN_NONE) return;
 
     int it;
-    for(it=0; it<last_led_count; ++it) {
-        uint32_t hex = hex_pattern( pattern, it, last_led_count, frame );
+    for(it=0; it<UsrCfg->nled; ++it) {
+        uint32_t hex = hex_pattern( UsrCfg->ptrn, it, UsrCfg->nled, frame, UsrCfg->clr );
         last_leds[3*it+0] = (hex>>8);
         last_leds[3*it+1] = (hex);
         last_leds[3*it+2] = (hex>>16);
     }
     frame++;
     debug("Frame: %i", (int)frame);
-    ws2812_push( (char*)last_leds, 3*last_led_count);
+    ws2812_push( (char*)last_leds, 3*UsrCfg->nled);
 }
 
 
@@ -84,9 +82,9 @@ udpserver_recv(void *arg, char *pusrdata, unsigned short len)
 	len -= 3;
 	if( len > sizeof(last_leds) + 3 )
 		len = sizeof(last_leds) + 3;
-	ets_memcpy( last_leds, pusrdata+3, len );
-	last_led_count = len / 3;
-    pattern = PTRN_NONE;
+	ets_memcpy( UsrCfg->nled, pusrdata+3, len );
+	UsrCfg->nled = len / 3;
+    UsrCfg->ptrn = PTRN_NONE;
 }
 
 
@@ -103,8 +101,6 @@ void user_init(void)
 //	system_restore();
 
 	CSSettingsLoad( 0 );
-    pattern = (uint8_t)SETTINGS.UserData[0];
-    last_led_count = *((uint16_t*)(SETTINGS.UserData+1));
     CSPreInit();
 
     pUdpServer = (struct espconn *)os_zalloc(sizeof(struct espconn));

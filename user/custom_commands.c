@@ -18,8 +18,8 @@ int ICACHE_FLASH_ATTR CustomCommand(char * buffer, int retsize, char *pusrdata, 
 
     	case 'l': case 'L': { //LEDs
     		int i, it = 0;
-    		buffend += ets_sprintf( buffend, "CL:%d:", last_led_count );
-    		uint16_t toledsvals = last_led_count*3;
+    		buffend += ets_sprintf( buffend, "CL:%d:", UsrCfg->nled );
+    		uint16_t toledsvals = UsrCfg->nled*3;
     		if( toledsvals > 600 ) toledsvals = 600;
     		for( i = 0; i < toledsvals; i++ )
     		{
@@ -40,25 +40,20 @@ int ICACHE_FLASH_ATTR CustomCommand(char * buffer, int retsize, char *pusrdata, 
             #endif
             ws2812_push(pusrdata+3,len-3);
             ets_memcpy( last_leds, pusrdata+3, len );
-            last_led_count = (len-1) / 3;
-            pattern = PTRN_NONE;
+            UsrCfg->nled = (len-1) / 3;
+            UsrCfg->ptrn = PTRN_NONE;
             frame = 0;
         } break;
 
 
         case 'P': case 'p': { // set pattern to be repeated
             if( len<5 ) break;
-            pattern = (uint8_t)pusrdata[2];
+            frame = 0;
+            UsrCfg->ptrn = (uint8_t)pusrdata[2];
             uint8_t c1 = (uint8_t)pusrdata[3];
             uint8_t c2 = (uint8_t)pusrdata[4];
-            last_led_count = (uint16_t)(c1<<8) + (uint16_t)c2;
-            debug(
-                "Pattern: %i; c1: %i; c1: %i; numLEDs: %i\n",
-                (int)pattern, (int)c1, (int)c2, (int)last_led_count
-            );
-            frame = 0;
-            SETTINGS.UserData[0] = (char)pattern;
-            *((uint16_t*)(SETTINGS.UserData+1)) = last_led_count;
+            UsrCfg->nled = (uint16_t)(c1<<8) + (uint16_t)c2;
+            if( len>7 ) ets_memcpy(UsrCfg->clr, pusrdata+5, 3);
             CSSettingsSave();
             return buffend-buffer;
         } break;

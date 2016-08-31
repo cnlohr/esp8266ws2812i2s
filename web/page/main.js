@@ -101,20 +101,25 @@ function KickLEDs()
 
 	// Select a pattern to be used continously
 	$('#LEDPbtn').click( function(e) {
-		var val = $('#LEDSelect').val();
+		var pattern = $('#LEDSelect').val();
 		var numLEDs = parseInt($('#LEDNum').val());
-		if( ! val.match(/^\d+$/) ) {
+		if( ! pattern.match(/^\d+$/) ) {
 			$('#LEDSelect').css( "background-color", "#ff0000");
 			return false;
 		}
+		var color = document.getElementById('LEDColor').value;
+		color = color.replace('#','');
 		$('#LEDSelect').css( "background-color", "#ffffff");
-		var qStr = new Uint8Array(7);
+		var qStr = new Uint8Array(8);
 		var byte = 0;
-		qStr[byte++] = "C".charCodeAt(); qStr[byte++] = "P".charCodeAt();
-		qStr[byte++] = parseInt(val);
+		qStr[byte++] = "C".charCodeAt();
+		qStr[byte++] = "P".charCodeAt();
+		qStr[byte++] = parseInt(pattern);
 		qStr[byte++] = numLEDs>>8;
 		qStr[byte++] = numLEDs%256;
-		qStr[byte++] = 0;
+		qStr[byte++] = parseInt(color.substr(0,2), 16);
+		qStr[byte++] = parseInt(color.substr(2,2), 16);
+		qStr[byte++] = parseInt(color.substr(4,2), 16);
 		QueueOperation( qStr );
 		return true;
 	});
