@@ -32,7 +32,7 @@ int ICACHE_FLASH_ATTR CustomCommand(char * buffer, int retsize, char *pusrdata, 
 
         case 'T': case 't': { // set led-ranges over Web-UI
             #ifdef DEBUG
-            printf("Color Data: ");
+                printf("Color Data: ");
                 int it;
                 for(it=3; it<len; ++it)
                     printf("%x ", pusrdata[it]);
@@ -53,7 +53,8 @@ int ICACHE_FLASH_ATTR CustomCommand(char * buffer, int retsize, char *pusrdata, 
             uint8_t c1 = (uint8_t)pusrdata[3];
             uint8_t c2 = (uint8_t)pusrdata[4];
             UsrCfg->nled = (uint16_t)(c1<<8) + (uint16_t)c2;
-            if( len>7 ) ets_memcpy(UsrCfg->clr, pusrdata+5, 3);
+            if( len>7 ) ets_memcpy(UsrCfg->clr, (uint8_t*)(pusrdata+5), 3);
+            debug( "len: %u; ptrn: %i, nled: %i, clr: %02x%02x%02x\n", len, UsrCfg->ptrn, UsrCfg->nled, (int)pusrdata[5], (int)pusrdata[6], (int)pusrdata[7] );
             CSSettingsSave();
             return buffend-buffer;
         } break;

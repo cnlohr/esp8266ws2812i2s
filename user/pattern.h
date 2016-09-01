@@ -2,9 +2,9 @@
 #define _PATTERN_H
 
 enum patterns{
-    PTRN_NONE=0,
+    PTRN_CONST=0,
     PTRN_DEFAULT=254,
-    PTRN_CONST=255 ///< Constant color
+    PTRN_NONE=255 ///< Constant color
 }; ///< Special patterns for connected LEDs
 
 uint64_t HSVtoHEX( float hue, float sat, float value );

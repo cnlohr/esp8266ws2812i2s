@@ -5,6 +5,7 @@
 is_leds_running = false;
 pause_led = false;
 led_data = [];
+nled = 4;
 
 
 function findPos(obj) {
@@ -101,25 +102,27 @@ function KickLEDs()
 
 	// Select a pattern to be used continously
 	$('#LEDPbtn').click( function(e) {
-		var pattern = $('#LEDSelect').val();
+		var ptrn = $('#LEDSelect').val();
 		var numLEDs = parseInt($('#LEDNum').val());
-		if( ! pattern.match(/^\d+$/) ) {
+		if( ! ptrn.match(/^\d+$/) ) {
 			$('#LEDSelect').css( "background-color", "#ff0000");
 			return false;
 		}
 		var color = document.getElementById('LEDColor').value;
 		color = color.replace('#','');
 		$('#LEDSelect').css( "background-color", "#ffffff");
-		var qStr = new Uint8Array(8);
+		var qStr = new Uint8Array(ptrn==0 ? 8 : 5);
 		var byte = 0;
 		qStr[byte++] = "C".charCodeAt();
 		qStr[byte++] = "P".charCodeAt();
-		qStr[byte++] = parseInt(pattern);
+		qStr[byte++] = parseInt(ptrn);
 		qStr[byte++] = numLEDs>>8;
 		qStr[byte++] = numLEDs%256;
-		qStr[byte++] = parseInt(color.substr(0,2), 16);
-		qStr[byte++] = parseInt(color.substr(2,2), 16);
-		qStr[byte++] = parseInt(color.substr(4,2), 16);
+		if( ptrn==0 ) {
+			qStr[byte++] = parseInt(color.substr(0,2), 16);
+			qStr[byte++] = parseInt(color.substr(2,2), 16);
+			qStr[byte++] = parseInt(color.substr(4,2), 16);
+		}
 		QueueOperation( qStr );
 		return true;
 	});
@@ -153,18 +156,18 @@ function GotLED(req,data)
 
 	$( "#LEDPauseButton" ).css( "background-color", "green" );
 
-	var samps = Number( secs[1] );
+	nled = Number( secs[1] );
 	led_data = secs[2];
 	var lastsamp = parseInt( led_data.substr(0,4),16 );
 	ctx.clearRect( 0, 0, canvas.width, canvas.height );
 
-	for( var i = 0; i < samps; i++ ) {
-		var x2 = i * canvas.clientWidth / samps;
+	for( var i = 0; i < nled; i++ ) {
+		var x2 = i * canvas.clientWidth / nled;
 		var samp = led_data.substr(i*6,6);
 
 		ctx.fillStyle = "#" + samp.substr( 2, 2 ) + samp.substr( 0, 2 ) + samp.substr( 4, 2 );
 		ctx.lineWidth = 0;
-		ctx.fillRect( x2, 0, canvas.clientWidth / samps+1, canvas.clientHeight );
+		ctx.fillRect( x2, 0, canvas.clientWidth / nled+1, canvas.clientHeight );
 	}
 
 	LEDDataTicker();
