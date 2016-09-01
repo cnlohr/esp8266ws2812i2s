@@ -45,9 +45,9 @@ int main( int argc, char ** argv )
 		uint8_t buffer[lights*3];
 		unsigned i;
 		for( i = 0; i < lights; i++ ) {
-			uint32_t hex;
+			uint32_t hex = 0;
 
-			hex = hex_pattern(  pattern, i, lights, frame );
+			hex = hex_pattern(  pattern, i, lights, frame, NULL );
 
 			buffer[0+i*3] = (hex>>8);
 			buffer[1+i*3] = (hex);

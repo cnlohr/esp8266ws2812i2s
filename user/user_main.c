@@ -20,53 +20,47 @@
 static volatile os_timer_t some_timer;
 static volatile os_timer_t pattern_timer;
 static struct espconn *pUdpServer;
+usr_conf_t * UsrCfg = (usr_conf_t*)(SETTINGS.UserData);
 uint8_t last_leds[512*3] = {0};
-int last_led_count = 0;
-uint8_t pattern = PATTERN_NONE;
 uint32_t frame = 0;
-uint32_t ws_sleep = WS_SLEEP;
 
 
 //int ICACHE_FLASH_ATTR StartMDNS();
 
-void user_rf_pre_init(void)
-{
-	//nothing.
-}
+
+void user_rf_pre_init(void) {/*nothing.*/}
 
 
-char * strcat( char * dest, char * src )
-{
-	return strcat(dest, src );
-}
+char * strcat( char * dest, char * src ) { return strcat(dest, src ); }
 
 
 
 //Tasks that happen all the time.
-
 os_event_t    procTaskQueue[procTaskQueueLen];
-
 static void ICACHE_FLASH_ATTR procTask(os_event_t *events)
 {
 	CSTick( 0 );
 	system_os_post(procTaskPrio, 0, 0 );
 }
 
+
+//Display pattern on connected LEDs
 static void ICACHE_FLASH_ATTR patternTimer(void *arg)
 {
-    if(pattern == PATTERN_NONE) return;
+    if(UsrCfg->ptrn == PTRN_NONE) return;
 
     int it;
-    for(it=0; it<last_led_count; ++it) {
-        uint32_t hex = hex_pattern( pattern, it, last_led_count, frame );
+    for(it=0; it<UsrCfg->nled; ++it) {
+        uint32_t hex = hex_pattern( UsrCfg->ptrn, it, UsrCfg->nled, frame, UsrCfg->clr );
         last_leds[3*it+0] = (hex>>8);
         last_leds[3*it+1] = (hex);
         last_leds[3*it+2] = (hex>>16);
     }
-    frame ++;
+    frame++;
     debug("Frame: %i", (int)frame);
-    ws2812_push( (char*)last_leds, 3*last_led_count);
+    ws2812_push( (char*)last_leds, 3*UsrCfg->nled);
 }
+
 
 //Timer event.
 static void ICACHE_FLASH_ATTR myTimer(void *arg)
@@ -88,15 +82,14 @@ udpserver_recv(void *arg, char *pusrdata, unsigned short len)
 	len -= 3;
 	if( len > sizeof(last_leds) + 3 )
 		len = sizeof(last_leds) + 3;
-	ets_memcpy( last_leds, pusrdata+3, len );
-	last_led_count = len / 3;
-    pattern = PATTERN_NONE;
+	ets_memcpy( UsrCfg->nled, pusrdata+3, len );
+	UsrCfg->nled = len / 3;
+    UsrCfg->ptrn = PTRN_NONE;
 }
 
-void ICACHE_FLASH_ATTR charrx( uint8_t c )
-{
-	//Called from UART.
-}
+
+void ICACHE_FLASH_ATTR charrx( uint8_t c ) {/*Called from UART.*/}
+
 
 void user_init(void)
 {
@@ -108,8 +101,6 @@ void user_init(void)
 //	system_restore();
 
 	CSSettingsLoad( 0 );
-    pattern = (uint8_t)SETTINGS.UserData[0];
-    last_led_count = *((uint16_t*)(SETTINGS.UserData+1));
     CSPreInit();
 
     pUdpServer = (struct espconn *)os_zalloc(sizeof(struct espconn));
@@ -121,13 +112,10 @@ void user_init(void)
 	espconn_regist_recvcb(pUdpServer, udpserver_recv);
 
 	if( espconn_create( pUdpServer ) )
-	{
-		while(1) { uart0_sendStr( "\r\nFAULT\r\n" ); }
-	}
+		while(1)
+            uart0_sendStr( "\r\nFAULT\r\n" );
 
 	CSInit();
-
-
 
 	//Set GPIO16 for INput
 	WRITE_PERI_REG(PAD_XPD_DCDC_CONF,
@@ -161,11 +149,7 @@ void user_init(void)
 
 	ws2812_init();
 
-	uint8_t ledout[] = { 0x10, 0x10, 0x10 };
-	ws2812_push( ledout, sizeof( ledout ) );
-
 	printf( "Boot Ok.\n" );
-
 
 	wifi_set_sleep_type(LIGHT_SLEEP_T);
 	wifi_fpm_set_sleep_type(LIGHT_SLEEP_T);
@@ -175,12 +159,5 @@ void user_init(void)
 
 
 //There is no code in this project that will cause reboots if interrupts are disabled.
-void EnterCritical()
-{
-}
-
-void ExitCritical()
-{
-}
-
-
+void EnterCritical() {}
+void ExitCritical() {}

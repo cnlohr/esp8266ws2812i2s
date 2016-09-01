@@ -2,9 +2,11 @@
 //
 //This particular file may be licensed under the MIT/x11, New BSD or ColorChord Licenses.
 
-
 is_leds_running = false;
 pause_led = false;
+led_data = [];
+nled = 4;
+
 
 function findPos(obj) {
     var curleft = 0, curtop = 0;
@@ -18,18 +20,19 @@ function findPos(obj) {
     return undefined;
 }
 
+
 function rgbToHex(r, g, b) {
     if (r > 255 || g > 255 || b > 255)
         throw "Invalid color component";
     return ((r << 16) | (g << 8) | b).toString(16);
 }
 
+
 function KickLEDs()
 {
 	// Validate Number of LEDS
 	$('#LEDNum').change( function(e) {
 		var val = parseInt( $('#LEDNum').val() );
-		console.log(val);
 		if( val<0 || val>512 || isNaN(val) ) $('#LEDNum').val(4);
 	});
 
@@ -88,7 +91,9 @@ function KickLEDs()
 				qStr[byte++] = rVal;
 				qStr[byte++] = bVal;
 			} else {
-				qStr[byte++] = 0; qStr[byte++] = 0; qStr[byte++] = 1;
+				qStr[byte++] = parseInt(led_data.substr((i-1)*6+0, 2), 16);
+				qStr[byte++] = parseInt(led_data.substr((i-1)*6+2, 2), 16);
+				qStr[byte++] = parseInt(led_data.substr((i-1)*6+4, 2), 16);
 			}
 		} // console.log(leds);	console.log(qStr);
 		QueueOperation( qStr );
@@ -97,20 +102,27 @@ function KickLEDs()
 
 	// Select a pattern to be used continously
 	$('#LEDPbtn').click( function(e) {
-		var val = $('#LEDSelect').val();
+		var ptrn = $('#LEDSelect').val();
 		var numLEDs = parseInt($('#LEDNum').val());
-		if( ! val.match(/^\d+$/) ) {
+		if( ! ptrn.match(/^\d+$/) ) {
 			$('#LEDSelect').css( "background-color", "#ff0000");
 			return false;
 		}
+		var color = document.getElementById('LEDColor').value;
+		color = color.replace('#','');
 		$('#LEDSelect').css( "background-color", "#ffffff");
-		var qStr = new Uint8Array(7);
+		var qStr = new Uint8Array(ptrn==0 ? 8 : 5);
 		var byte = 0;
-		qStr[byte++] = "C".charCodeAt(); qStr[byte++] = "P".charCodeAt();
-		qStr[byte++] = parseInt(val);
+		qStr[byte++] = "C".charCodeAt();
+		qStr[byte++] = "P".charCodeAt();
+		qStr[byte++] = parseInt(ptrn);
 		qStr[byte++] = numLEDs>>8;
 		qStr[byte++] = numLEDs%256;
-		qStr[byte++] = 0;
+		if( ptrn==0 ) {
+			qStr[byte++] = parseInt(color.substr(0,2), 16);
+			qStr[byte++] = parseInt(color.substr(2,2), 16);
+			qStr[byte++] = parseInt(color.substr(4,2), 16);
+		}
 		QueueOperation( qStr );
 		return true;
 	});
@@ -121,7 +133,9 @@ function KickLEDs()
 		LEDDataTicker();
 }
 
+
 window.addEventListener("load", KickLEDs, false);
+
 
 function ToggleLEDPause()
 {
@@ -135,8 +149,6 @@ function GotLED(req,data)
 	var ls = document.getElementById('LEDCanvasHolder');
 	var canvas = document.getElementById('LEDCanvas');
 	var ctx = canvas.getContext('2d');
-	var h = ls.height;
-	var w = ls.width;
 	if( canvas.width != ls.clientWidth-10 )   canvas.width = ls.clientWidth-10;
 	if( ctx.canvas.width != canvas.clientWidth )   ctx.canvas.width = canvas.clientWidth;
 
@@ -144,25 +156,23 @@ function GotLED(req,data)
 
 	$( "#LEDPauseButton" ).css( "background-color", "green" );
 
-	var samps = Number( secs[1] );
-	var data = secs[2];
-	var lastsamp = parseInt( data.substr(0,4),16 );
+	nled = Number( secs[1] );
+	led_data = secs[2];
+	var lastsamp = parseInt( led_data.substr(0,4),16 );
 	ctx.clearRect( 0, 0, canvas.width, canvas.height );
 
-	for( var i = 0; i < samps; i++ ) {
-		var x2 = i * canvas.clientWidth / samps;
-		var samp = data.substr(i*6,6);
-		var y2 = ( 1.-samp / 2047 ) * canvas.clientHeight;
+	for( var i = 0; i < nled; i++ ) {
+		var x2 = i * canvas.clientWidth / nled;
+		var samp = led_data.substr(i*6,6);
 
 		ctx.fillStyle = "#" + samp.substr( 2, 2 ) + samp.substr( 0, 2 ) + samp.substr( 4, 2 );
 		ctx.lineWidth = 0;
-		ctx.fillRect( x2, 0, canvas.clientWidth / samps+1, canvas.clientHeight );
+		ctx.fillRect( x2, 0, canvas.clientWidth / nled+1, canvas.clientHeight );
 	}
-
-	var samp = parseInt( data.substr(i*2,2),16 );
 
 	LEDDataTicker();
 }
+
 
 function LEDDataTicker()
 {
@@ -173,7 +183,3 @@ function LEDDataTicker()
 	$( "#LEDPauseButton" ).css( "background-color", (is_leds_running&&!pause_led)?"green":"red" );
 
 }
-
-
-
-
