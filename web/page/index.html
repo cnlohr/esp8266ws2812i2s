@@ -11,6 +11,7 @@ td { vertical-align: top; }
 #SystemMessage { position: fixed; top: 5px; background-color: DarkSlateBlue; color: #ffffff; left: 5px; display:none; }
 .dragandrophandler { border:2px dotted #0B85A1; color:#92AAB0;vertical-align:middle;padding:10px 10px 10 10px;margin-bottom:10px;font-size:200%;}
 .unsaved-input { border: 2px solid pink; border-radius: 7px; }
+kbd { background-color: #e1e3e5; border: 1px solid #adb3b9; border-radius: 3px;    box-shadow: 0 1px 0 rgba(12, 13, 14, 0.2), 0 0 0 2px #fff inset; display: inline-block; font-family: Arial,"Helvetica Neue",Helvetica,sans-serif; line-height: 1.4; padding: 0.1em 0.6em; white-space: nowrap; }
 </style>
 </head><body>
 
@@ -29,10 +30,12 @@ td { vertical-align: top; }
 <td><input type=button onclick="ToggleLEDPause();" id=LEDPauseButton value="|| / >"></td></tr></table>
 Select LEDs/Pattern: <input type=text id=LEDSelect value=1-4>  <br>
 #LEDs: <input type=number min=0 value=4 id=LEDNum style="width:5.5em;">
-<input type=color id=LEDColor> <input type=button value="Set Color" id=LEDCbtn> <input type=button value="Set Pattern" id=LEDPbtn>
-<p style="font-size:70%;font-style: italic">Patterns can include individual LEDs or ranges of LEDs separated by commata, e.g. "1-3,7,20-35".
-You can select colors via the color-picker or by clicking a color inside the color display.
-Alternatively, colors can be appended to a range, e.g. "1-3#ffff00". Rages without color use the last specified one.
+<input type=color id=LEDColor> <input type=button value="Set Color" id=LEDCbtn> <input type=button value="Set Pattern" id=LEDPbtn> <input type=button value=Stop id=LEDSbtn> <input type=button value=Off id=LEDObtn>
+<p style="font-size:70%;font-style: italic">
+Patterns can include individual LEDs or ranges of LEDs separated by commata, e.g. "1-3,7,20-35".
+You can select colors via the color-picker or by holding <kbd>Alt</kbd> and clicking a color inside the color display.
+Alternatively, colors can be appended to a range, e.g. "1-3#ffff00". Rages without an appended color use the last specified one.
+Ranges can be entered by hand or selected in the color-display with the usual <kbd>Shift</kbd>+<kbd>LeftClick</kbd> and <kbd>Alt</kbd>+<kbd>LeftClick</kbd> combinations.
 If you set a pattern, use a low positive integer.
 "#LEDs" is the total number of LEDs connected to the esp8266 and must be provided.</p>
 </div>

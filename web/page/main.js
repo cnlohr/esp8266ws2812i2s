@@ -33,6 +33,44 @@ function strToByte(str, pos) {
 }
 
 
+function validateRange() {
+	var obj = $('#LEDSelect');
+	var val = obj.val();
+	if( ! val.match(/^\d+(-\d+)?(#[a-zA-Z0-9]{6,6})?(,\d+(-\d+)?(#[a-zA-Z0-9]{6,6})?)*$/) ) {
+	    obj.css( "background-color", "#ff0000");
+	    return false;
+	}
+	obj.css( "background-color", "#ffffff");
+	return val;
+}
+
+
+function SetPattern( ptrn ) {
+	if( ! ptrn.match(/^\d+$/) ) {
+		$('#LEDSelect').css( "background-color", "#ff0000");
+		return false;
+	}
+	var numLEDs = parseInt($('#LEDNum').val());
+	var color = document.getElementById('LEDColor').value;
+	color = color.replace('#','');
+	$('#LEDSelect').css( "background-color", "#ffffff");
+	var qDat = new Uint8Array(ptrn==0 ? 8 : 5);
+	var byte = 0;
+	qDat[byte++] = "C".charCodeAt();
+	qDat[byte++] = "P".charCodeAt();
+	qDat[byte++] = parseInt(ptrn);
+	qDat[byte++] = numLEDs>>8;
+	qDat[byte++] = numLEDs%256;
+	if( ptrn==0 ) {
+		qDat[byte++] = strToByte(color, 0);
+		qDat[byte++] = strToByte(color, 2);
+		qDat[byte++] = strToByte(color, 4);
+	}
+	QueueOperation( qDat );
+	return true;
+}
+
+
 // Mostly setup stuff
 function KickLEDs()
 {
@@ -45,21 +83,39 @@ function KickLEDs()
 	// Color Picker (from Canvas)
 	//$('#LEDCanvas').mousemove(function(e) {
 	$('#LEDCanvas').click( function(e) {
+	    var s = e.shiftKey, a = e.altKey, c = e.ctrlKey;
+		var sel = $('#LEDSelect');
 	    var pos = findPos(this);
-	    var c = this.getContext('2d');
-	    var p = c.getImageData(e.pageX-pos.x, e.pageY-pos.y, 1, 1).data;
-	    document.getElementById('LEDColor').value =
-	    	"#" + ("000000" + rgbToHex(p[0], p[1], p[2])).slice(-6);;
+	    var ctx = this.getContext('2d');
+	    var x = e.pageX-pos.x;
+	    var p = ctx.getImageData(x, e.pageY-pos.y, 1, 1).data;
+	    var n = parseInt(x * nled / this.clientWidth)+1;
+	    var clr = "#" + ("000000" + rgbToHex(p[0], p[1], p[2])).slice(-6)
+	    document.getElementById('LEDColor').value = clr;
+	    var val = validateRange();
+	    //if( !val && !s ) return false;
+	    var ptrns = val.split(',');
+	    var endptrn = ptrns[ptrns.length-1]
+	    var endclr = endptrn.split('#');
+	    endclr = endclr[1] ? endclr[1] : false;
+	    var singlet = endptrn.match(/^\d+$/);
+	    if( a ) {
+	    	console.log('Alt!');
+	    	; // Do nothing
+	    } else if( !s && !c ) {
+	    	sel.val(n);
+	    } else if( s && !endclr ) {
+	    	sel.val( val + '-' + n + clr );
+	    } else if( c && !s && (endclr || singlet) ) {
+	    	sel.val( (val ? val+',' : '') + n );
+	    }
+	    validateRange();
 	});
 
 	// Set LED color via Button
 	$('#LEDCbtn').click( function(e) {
-		var val = $('#LEDSelect').val();
-		if( ! val.match(/^\d+(-\d+)?(#[a-zA-Z0-9]{6,6})?(,\d+(-\d+)?(#[a-zA-Z0-9]{6,6})?)*$/) ) {
-		    $('#LEDSelect').css( "background-color", "#ff0000");
-		    return false;
-		}
-		$('#LEDSelect').css( "background-color", "#ffffff");
+		var val = validateRange();
+		if( !val ) return false;
 		var numLEDs = parseInt( $('#LEDNum').val() );
 		var toks = val.split(',');
 		var leds = new Array();
@@ -105,28 +161,18 @@ function KickLEDs()
 	// Select a pattern to be used continously
 	$('#LEDPbtn').click( function(e) {
 		var ptrn = $('#LEDSelect').val();
-		var numLEDs = parseInt($('#LEDNum').val());
-		if( ! ptrn.match(/^\d+$/) ) {
-			$('#LEDSelect').css( "background-color", "#ff0000");
-			return false;
-		}
-		var color = document.getElementById('LEDColor').value;
-		color = color.replace('#','');
-		$('#LEDSelect').css( "background-color", "#ffffff");
-		var qDat = new Uint8Array(ptrn==0 ? 8 : 5);
-		var byte = 0;
-		qDat[byte++] = "C".charCodeAt();
-		qDat[byte++] = "P".charCodeAt();
-		qDat[byte++] = parseInt(ptrn);
-		qDat[byte++] = numLEDs>>8;
-		qDat[byte++] = numLEDs%256;
-		if( ptrn==0 ) {
-			qDat[byte++] = strToByte(color, 0);
-			qDat[byte++] = strToByte(color, 2);
-			qDat[byte++] = strToByte(color, 4);
-		}
-		QueueOperation( qDat );
-		return true;
+		return SetPattern( ptrn );
+	});
+
+	// Stop LEDs from changing
+	$('#LEDSbtn').click( function(e) {
+		return SetPattern( '255' );
+	});
+
+	// Turn all LEDs to black
+	$('#LEDObtn').click( function(e) {
+		document.getElementById('LEDColor').value = '#000000';
+		return SetPattern( '0' );
 	});
 
 	$( "#LEDPauseButton" ).css( "background-color", (is_leds_running&&!pause_led)?"green":"red" );
