@@ -28,6 +28,12 @@ function rgbToHex(r, g, b) {
 }
 
 
+function strToByte(str, pos) {
+	return parseInt(str.substr(pos, 2), 16);
+}
+
+
+// Mostly setup stuff
 function KickLEDs()
 {
 	// Validate Number of LEDS
@@ -40,13 +46,10 @@ function KickLEDs()
 	//$('#LEDCanvas').mousemove(function(e) {
 	$('#LEDCanvas').click( function(e) {
 	    var pos = findPos(this);
-	    var x = e.pageX - pos.x;
-	    var y = e.pageY - pos.y;
-	    var coord = "x=" + x + ", y=" + y;
 	    var c = this.getContext('2d');
-	    var p = c.getImageData(x, y, 1, 1).data;
-	    hex = "#" + ("000000" + rgbToHex(p[0], p[1], p[2])).slice(-6);
-	    document.getElementById('LEDColor').value = hex;
+	    var p = c.getImageData(e.pageX-pos.x, e.pageY-pos.y, 1, 1).data;
+	    document.getElementById('LEDColor').value =
+	    	"#" + ("000000" + rgbToHex(p[0], p[1], p[2])).slice(-6);;
 	});
 
 	// Set LED color via Button
@@ -78,25 +81,24 @@ function KickLEDs()
 		    }
 		}
 
-		var qStr = new Uint8Array(3*numLEDs+3);
+		var qDat = new Uint8Array(3*numLEDs+3);
 		var byte = 0;
-		qStr[byte++] = "C".charCodeAt(); qStr[byte++] = "T".charCodeAt();
-		qStr[byte++] = " ".charCodeAt();
+		qDat[byte++] = "C".charCodeAt();
+		qDat[byte++] = "T".charCodeAt();
+		qDat[byte++] = " ".charCodeAt();
 		for(var i=1; i<=numLEDs; ++i) {
 			if( leds[i] && typeof(leds[i])!='undefined' ) {
-				var rVal = parseInt(leds[i].substr(0, 2), 16);
-				var gVal = parseInt(leds[i].substr(2, 2), 16);
-				var bVal = parseInt(leds[i].substr(4, 2), 16);
-				qStr[byte++] = gVal; //String.fromCharCode(rVal);
-				qStr[byte++] = rVal;
-				qStr[byte++] = bVal;
+				qDat[byte++] = strToByte(leds[i], 2); //String.fromCharCode(rVal);
+				qDat[byte++] = strToByte(leds[i], 0);
+				qDat[byte++] = strToByte(leds[i], 4);
 			} else {
-				qStr[byte++] = parseInt(led_data.substr((i-1)*6+0, 2), 16);
-				qStr[byte++] = parseInt(led_data.substr((i-1)*6+2, 2), 16);
-				qStr[byte++] = parseInt(led_data.substr((i-1)*6+4, 2), 16);
+				var s = (i-1)*6;
+				qDat[byte++] = strToByte(led_data, s+0);
+				qDat[byte++] = strToByte(led_data, s+2);
+				qDat[byte++] = strToByte(led_data, s+4);
 			}
-		} // console.log(leds);	console.log(qStr);
-		QueueOperation( qStr );
+		} // console.log(leds);	console.log(qDat);
+		QueueOperation( qDat );
 		return true;
 	});
 
@@ -111,19 +113,19 @@ function KickLEDs()
 		var color = document.getElementById('LEDColor').value;
 		color = color.replace('#','');
 		$('#LEDSelect').css( "background-color", "#ffffff");
-		var qStr = new Uint8Array(ptrn==0 ? 8 : 5);
+		var qDat = new Uint8Array(ptrn==0 ? 8 : 5);
 		var byte = 0;
-		qStr[byte++] = "C".charCodeAt();
-		qStr[byte++] = "P".charCodeAt();
-		qStr[byte++] = parseInt(ptrn);
-		qStr[byte++] = numLEDs>>8;
-		qStr[byte++] = numLEDs%256;
+		qDat[byte++] = "C".charCodeAt();
+		qDat[byte++] = "P".charCodeAt();
+		qDat[byte++] = parseInt(ptrn);
+		qDat[byte++] = numLEDs>>8;
+		qDat[byte++] = numLEDs%256;
 		if( ptrn==0 ) {
-			qStr[byte++] = parseInt(color.substr(0,2), 16);
-			qStr[byte++] = parseInt(color.substr(2,2), 16);
-			qStr[byte++] = parseInt(color.substr(4,2), 16);
+			qDat[byte++] = strToByte(color, 0);
+			qDat[byte++] = strToByte(color, 2);
+			qDat[byte++] = strToByte(color, 4);
 		}
-		QueueOperation( qStr );
+		QueueOperation( qDat );
 		return true;
 	});
 
@@ -144,6 +146,7 @@ function ToggleLEDPause()
 }
 
 
+// Update the display canvas
 function GotLED(req,data)
 {
 	var ls = document.getElementById('LEDCanvasHolder');
@@ -158,7 +161,6 @@ function GotLED(req,data)
 
 	nled = Number( secs[1] );
 	led_data = secs[2];
-	var lastsamp = parseInt( led_data.substr(0,4),16 );
 	ctx.clearRect( 0, 0, canvas.width, canvas.height );
 
 	for( var i = 0; i < nled; i++ ) {
@@ -181,5 +183,4 @@ function LEDDataTicker()
 		QueueOperation( "CL",  GotLED );
 	} else is_leds_running = 0;
 	$( "#LEDPauseButton" ).css( "background-color", (is_leds_running&&!pause_led)?"green":"red" );
-
 }
