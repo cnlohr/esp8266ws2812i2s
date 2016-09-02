@@ -8,6 +8,13 @@ led_data = [];
 nled = 4;
 
 
+String.prototype.replaceLast = function (what, replacement) {
+    var pcs = this.split(what);
+    var lastPc = pcs.pop();
+    return pcs.join(what) + replacement + lastPc;
+};
+
+
 function findPos(obj) {
     var curleft = 0, curtop = 0;
     if (obj.offsetParent) {
@@ -74,10 +81,36 @@ function SetPattern( ptrn ) {
 // Mostly setup stuff
 function KickLEDs()
 {
+
 	// Validate Number of LEDS
 	$('#LEDNum').change( function(e) {
-		var val = parseInt( $('#LEDNum').val() );
-		if( val<0 || val>512 || isNaN(val) ) $('#LEDNum').val(4);
+		nled = parseInt( $('#LEDNum').val() );
+		if( val<0 || val>512 || isNaN(val) ) nled = 4;
+		$('#LEDNum').val(nled);
+	});
+
+	// Select a pattern to be used continously
+	$('#LEDPbtn').click( function(e) {
+		var ptrn = $('#LEDSelect').val();
+		return SetPattern( ptrn );
+	});
+
+	// Stop LEDs from changing
+	$('#LEDSbtn').click( function(e) {
+		return SetPattern( '255' );
+	});
+
+	// Turn all LEDs to black
+	$('#LEDObtn').click( function(e) {
+		document.getElementById('LEDColor').value = '#000000';
+		return SetPattern( '0' );
+	});
+
+	$('#LEDColor').change( function(e){
+		var sel = $('#LEDSelect');
+		val = sel.val();
+		sel.val( val.replace( /#[a-zA-Z0-9]{6,6}(?!.*#[a-zA-Z0-9]{6,6})/, this.value) );
+		//sel.val( val.replace( /#\d{6,6}$/, this.color) );
 	});
 
 	// Color Picker (from Canvas)
@@ -100,7 +133,6 @@ function KickLEDs()
 	    endclr = endclr[1] ? endclr[1] : false;
 	    var singlet = endptrn.match(/^\d+$/);
 	    if( a ) {
-	    	console.log('Alt!');
 	    	; // Do nothing
 	    } else if( !s && !c ) {
 	    	sel.val(n);
@@ -153,26 +185,9 @@ function KickLEDs()
 				qDat[byte++] = strToByte(led_data, s+2);
 				qDat[byte++] = strToByte(led_data, s+4);
 			}
-		} // console.log(leds);	console.log(qDat);
+		}
 		QueueOperation( qDat );
 		return true;
-	});
-
-	// Select a pattern to be used continously
-	$('#LEDPbtn').click( function(e) {
-		var ptrn = $('#LEDSelect').val();
-		return SetPattern( ptrn );
-	});
-
-	// Stop LEDs from changing
-	$('#LEDSbtn').click( function(e) {
-		return SetPattern( '255' );
-	});
-
-	// Turn all LEDs to black
-	$('#LEDObtn').click( function(e) {
-		document.getElementById('LEDColor').value = '#000000';
-		return SetPattern( '0' );
 	});
 
 	$( "#LEDPauseButton" ).css( "background-color", (is_leds_running&&!pause_led)?"green":"red" );
