@@ -2,17 +2,33 @@
 //
 //This particular file may be licensed under the MIT/x11, New BSD or ColorChord Licenses.
 
+function initLEDs() {
+var menItm = `
+	<tr><td width=1><input type=submit onclick="ShowHideEvent( 'LEDs' ); KickLEDs();" value="LEDs"></td><td>
+	<div id=LEDs class="collapsible">
+	<table width=100% border=1><tr><td id=LEDCanvasHolder><CANVAS id=LEDCanvas width=512 height=100></CANVAS></td>
+	<td><input type=button onclick="ToggleLEDPause();" id=LEDPauseButton value="|| / >"></td></tr></table>
+	Select LEDs/Pattern: <input type=text id=LEDSelect value=1-4>  <br>
+	#LEDs: <input type=number min=0 value=4 id=LEDNum style="width:5.5em;">
+	<input type=color id=LEDColor> <input type=button value="Set Color" id=LEDCbtn> <input type=button value="Set Pattern" id=LEDPbtn> <input type=button value=Stop id=LEDSbtn> <input type=button value=Off id=LEDObtn>
+	<p style="font-size:70%;font-style: italic">
+	Patterns can include individual LEDs or ranges of LEDs separated by commata, e.g. "1-3,7,20-35".
+	You can select colors via the color-picker or by holding <kbd>Alt</kbd> and clicking a color inside the color display.
+	Alternatively, colors can be appended to a range, e.g. "1-3#ffff00". Rages without an appended color use the last specified one.
+	Ranges can be entered by hand or selected in the color-display with the usual <kbd>Shift</kbd>+<kbd>LeftClick</kbd> and <kbd>Alt</kbd>+<kbd>LeftClick</kbd> combinations.
+	If you set a pattern, use a low positive integer.
+	"#LEDs" is the total number of LEDs connected to the esp8266 and must be provided.</p>
+	</div>
+	</td></tr>
+`;
+$('#MainMenu > tbody:last').after( menItm );
+KickLEDs();
+}
+
 is_leds_running = false;
 pause_led = false;
 led_data = [];
 nled = 4;
-
-
-String.prototype.replaceLast = function (what, replacement) {
-    var pcs = this.split(what);
-    var lastPc = pcs.pop();
-    return pcs.join(what) + replacement + lastPc;
-};
 
 
 function findPos(obj) {
@@ -77,11 +93,9 @@ function SetPattern( ptrn ) {
 	return true;
 }
 
-
 // Mostly setup stuff
 function KickLEDs()
 {
-
 	// Validate Number of LEDS
 	$('#LEDNum').change( function(e) {
 		nled = parseInt( $('#LEDNum').val() );
@@ -197,7 +211,7 @@ function KickLEDs()
 }
 
 
-window.addEventListener("load", KickLEDs, false);
+window.addEventListener("load", initLEDs, false);
 
 
 function ToggleLEDPause()
