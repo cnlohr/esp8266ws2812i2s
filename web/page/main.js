@@ -93,6 +93,7 @@ function SetPattern( ptrn ) {
 	return true;
 }
 
+
 // Mostly setup stuff
 function KickLEDs()
 {
