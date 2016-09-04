@@ -128,11 +128,11 @@ void user_init(void)
 		READ_PERI_REG(RTC_GPIO_ENABLE) & (uint32)0xfffffffe);       //out disable
 
 	SetServiceName( "ws2812" );
-	AddMDNSName( "cn8266" );
+	AddMDNSName( "esp82xx" );
 	AddMDNSName( "ws2812" );
 	AddMDNSService( "_http._tcp", "An ESP8266 Webserver", WEB_PORT );
 	AddMDNSService( "_ws2812._udp", "WS2812 Driver", COM_PORT );
-	AddMDNSService( "_cn8266._udp", "ESP8266 Backend", BACKEND_PORT );
+	AddMDNSService( "_esp82xx._udp", "ESP8266 Backend", BACKEND_PORT );
 
 	//Add a process
 	system_os_task(procTask, procTaskPrio, procTaskQueue, procTaskQueueLen);
