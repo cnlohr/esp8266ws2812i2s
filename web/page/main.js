@@ -22,8 +22,18 @@ var menItm = `
 	</td></tr>
 `;
 $('#MainMenu > tbody:last').after( menItm );
+
+var stl = document.styleSheets[0],
+	sel='kbd', rule='{ background-color: #e1e3e5; border: 1px solid #adb3b9; border-radius: 3px; box-shadow: 0 1px 0 rgba(12, 13, 14, 0.2), 0 0 0 2px #fff inset; display: inline-block; font-family: Arial,"Helvetica Neue",Helvetica,sans-serif; line-height: 1.4; padding: 0.1em 0.6em; white-space: nowrap; }';
+
+if (stl.insertRule)
+    stl.insertRule(sel + rule, stl.cssRules.length);
+else if (stl.addRule)
+    stl.addRule(sel, rule, -1);
+
 KickLEDs();
 }
+
 
 is_leds_running = false;
 pause_led = false;
