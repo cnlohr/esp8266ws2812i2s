@@ -73,6 +73,7 @@ static void ICACHE_FLASH_ATTR myTimer(void *arg)
 static void ICACHE_FLASH_ATTR
 udpserver_recv(void *arg, char *pusrdata, unsigned short len)
 {
+    UsrCfg->ptrn = PTRN_NONE;
 	struct espconn *pespconn = (struct espconn *)arg;
 
 	uart0_sendStr("X");
@@ -82,9 +83,8 @@ udpserver_recv(void *arg, char *pusrdata, unsigned short len)
 	len -= 3;
 	if( len > sizeof(last_leds) + 3 )
 		len = sizeof(last_leds) + 3;
-	ets_memcpy( UsrCfg->nled, pusrdata+3, len );
+	ets_memcpy( last_leds, pusrdata+3, len );
 	UsrCfg->nled = len / 3;
-    UsrCfg->ptrn = PTRN_NONE;
 }
 
 
