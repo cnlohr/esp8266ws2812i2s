@@ -3,6 +3,7 @@
 #include <c_types.h>
 #endif
 #include "pattern.h"
+#include <stdio.h>
 
 float my_fmod(float arg1, float arg2) {
     int full = (int)(arg1/arg2);
