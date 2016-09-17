@@ -10,6 +10,55 @@ float my_fmod(float arg1, float arg2) {
     return arg1 - full*arg2;
 }
 
+double sine( double x);
+double powerd( double x, int y);
+double factorial_div( double value, int x);
+
+double sine( double x)
+{
+    int i=0, j=1, sign=1;
+    double y1 = 0.0, diff = 1000.0;
+    if (x < 0.0) {  x = -1 * x;  sign = -1; }
+
+    while ( x > 360.0*3.1415926/180)
+        x = x - 360*3.1415926/180;
+
+    if( x > (270.0 * 3.1415926 / 180) ) {
+        sign = sign * -1;
+        x = 360.0*3.1415926/180 - x;
+
+    } else if ( x > (180.0 * 3.1415926 / 180) ) {
+        sign = sign * -1;
+        x = x - 180.0 *3.1415926 / 180;
+    } else if ( x > (90.0 * 3.1415926 / 180) )
+        x = 180.0 *3.1415926 / 180 - x;
+
+    while( powerd( diff, 2) > 1.0E-16 ) {
+        i++;
+        diff = j * factorial_div( powerd( x, (2*i -1)) ,(2*i -1));
+        y1 = y1 + diff;
+        j = -1 * j;
+    }// End while (..)
+    return ( sign * y1 );
+}// End sine(..)
+
+double powerd( double x, int y)
+{
+    int i=0;
+    double ans=1.0;
+
+    if(y==0) return 1.000;
+    else while( i < y) { i++;  ans = ans * x; }
+    return ans;
+}
+
+double factorial_div( double value, int x)
+{
+    if(x == 0) return 1;
+    else while( x > 1) value /= x--;
+    return value;
+}
+
 uint64_t HSVtoHEX( float hue, float sat, float value )
 {
 
@@ -69,6 +118,14 @@ uint32_t hex_pattern( uint8_t pattern, uint16_t light, uint16_t lights, uint32_t
         //Chaser
         case 12: hex = HSVtoHEX( light*.002 + frame*.002, 4, 1.0 );  break; //0.50 = overload. 0.45 = overheat? =0.40 = HOT
         case 13: hex = HSVtoHEX( frame*.001, 1.0,  1.0);  break; //Long, smooth, transitioning. full-brigth
+        case 14: {
+            float mdl = 0.4*sine(frame*0.01)+0.1*sine(frame*0.1);
+            if( light == 3 ) {
+                hex = HSVtoHEX(.61+0.1*sine(frame*0.005+1.8), 0.6, 0.8+mdl) ;
+            } else {
+                hex = HSVtoHEX(20/360.0, 0.8, .3+0.1*sine(frame*0.01+3.1415)) ;
+            }
+        } break;
         case PTRN_NONE: break;
         default: hex = HSVtoHEX( light*.05 + frame*.01, 1, 1.0 );
     }
