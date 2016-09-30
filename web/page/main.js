@@ -8,8 +8,8 @@ var menItm = `
 	<div id=LEDs class="collapsible">
 	<table width=100% border=1><tr><td id=LEDCanvasHolder><CANVAS id=LEDCanvas width=512 height=100></CANVAS></td>
 	<td><input type=button onclick="ToggleLEDPause();" id=LEDPauseButton value="|| / >"></td></tr></table>
-	Select LEDs/Pattern: <input type=text id=LEDSelect value=1-4>  <br>
-	#LEDs: <input type=number min=0 value=4 id=LEDNum style="width:5.5em;">
+	Select LEDs/Pattern: <input type=text id=LEDSelect value=14>  <br>
+	#LEDs: <input type=number min=0 value=5 id=LEDNum style="width:5.5em;" readonly>
 	<input type=color id=LEDColor> <input type=button value="Set Color" id=LEDCbtn> <input type=button value="Set Pattern" id=LEDPbtn> <input type=button value=Stop id=LEDSbtn> <input type=button value=Off id=LEDObtn>
 	<p style="font-size:70%;font-style: italic">
 	Patterns can include individual LEDs or ranges of LEDs separated by commata, e.g. "1-3,7,20-35".

@@ -1,6 +1,9 @@
 #include <stdint.h>
 #ifndef NO_CTYPES
 #include <c_types.h>
+#define WEIRDOFFST 1
+#else
+#define WEIRDOFFST 0
 #endif
 #include "pattern.h"
 #include <stdio.h>
@@ -120,7 +123,7 @@ uint32_t hex_pattern( uint8_t pattern, uint16_t light, uint16_t lights, uint32_t
         case 13: hex = HSVtoHEX( frame*.001, 1.0,  1.0);  break; //Long, smooth, transitioning. full-brigth
         case 14: {
             float mdl = 0.4*sine(frame*0.01)+0.1*sine(frame*0.1);
-            if( light == 3 ) {
+            if( light == (2 + WEIRDOFFST) ) {
                 hex = HSVtoHEX(.61+0.1*sine(frame*0.005+1.8), 0.6, 0.8+mdl) ;
             } else {
                 hex = HSVtoHEX(20/360.0, 0.8, .3+0.1*sine(frame*0.01+3.1415)) ;
