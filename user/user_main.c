@@ -151,8 +151,8 @@ void user_init(void)
 
 	printf( "Boot Ok.\n" );
 
-	wifi_set_sleep_type(LIGHT_SLEEP_T);
-	wifi_fpm_set_sleep_type(LIGHT_SLEEP_T);
+//	wifi_set_sleep_type(LIGHT_SLEEP_T);
+//	wifi_fpm_set_sleep_type(LIGHT_SLEEP_T);
 
 	system_os_post(procTaskPrio, 0, 0 );
 }

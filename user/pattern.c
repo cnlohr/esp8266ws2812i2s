@@ -1,4 +1,3 @@
-#include <stdint.h>
 #ifndef NO_CTYPES
 #include <c_types.h>
 #endif
