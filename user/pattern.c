@@ -68,6 +68,15 @@ uint32_t hex_pattern( uint8_t pattern, uint16_t light, uint16_t lights, uint32_t
         //Chaser
         case 12: hex = HSVtoHEX( light*.002 + frame*.002, 4, 1.0 );  break; //0.50 = overload. 0.45 = overheat? =0.40 = HOT
         case 13: hex = HSVtoHEX( frame*.001, 1.0,  1.0);  break; //Long, smooth, transitioning. full-brigth
+        case 14: 
+		{
+			float v1 = (((((light%256)<<2) - ((frame)%1024)+1024)%1024) );
+			float v2 = (((((light%256)<<2) - ((frame+1)%1024)+1024)%1024) );
+			float v3 = (((((light%256)<<2) - ((frame+2)%1024)+1024)%1024) );
+			float v4 = (((((light%256)<<2) - ((frame+3)%1024)+1024)%1024) );
+			hex = HSVtoHEX( light*.001 - frame*.001, 1,  (v1+v2+v3+v4)/(4.0*1024.0)*1.2-0.1); break; //Long, smooth, transitioning. 1.0 overloads.  Trying 0.9. If 0.9 works, should back off.
+		}
+
         case PTRN_NONE: break;
         default: hex = HSVtoHEX( light*.05 + frame*.01, 1, 1.0 );
     }
