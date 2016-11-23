@@ -47,11 +47,11 @@ Extra copyright info:
 //It is likely you could speed this up a little.
 
 #ifdef WS2812_THREE_SAMPLE
-#define WS_I2S_BCK 22  //Seems to work as low as 19, but is shakey at 18.
-#define WS_I2S_DIV 4
+#define WS_I2S_BCK 21  //Seems to work as low as 18, but is shakey at 1.
+#define WS_I2S_DIV 3
 #elif defined( WS2812_FOUR_SAMPLE ) || defined(SK6812)
-#define WS_I2S_BCK 17  //Seems to work as low as 14, shoddy at 13.
-#define WS_I2S_DIV 4
+#define WS_I2S_BCK 16  //Seems to work as low as 13, shoddy at 12.
+#define WS_I2S_DIV 3
 #else
 #error You need to either define WS2812_THREE_SAMPLE, WS2812_FOUR_SAMPLE or SK6812
 #endif
@@ -388,8 +388,8 @@ void ICACHE_FLASH_ATTR ws2812_init()
 						(I2S_CLKM_DIV_NUM<<I2S_CLKM_DIV_NUM_S));
 	SET_PERI_REG_MASK(I2SCONF, I2S_RIGHT_FIRST|I2S_MSB_RIGHT|I2S_RECE_SLAVE_MOD|
 						I2S_RECE_MSB_SHIFT|I2S_TRANS_MSB_SHIFT|
-						(((WS_I2S_BCK-1)&I2S_BCK_DIV_NUM )<<I2S_BCK_DIV_NUM_S)|
-						(((WS_I2S_DIV-1)&I2S_CLKM_DIV_NUM)<<I2S_CLKM_DIV_NUM_S));
+						(((WS_I2S_BCK)&I2S_BCK_DIV_NUM )<<I2S_BCK_DIV_NUM_S)|
+						(((WS_I2S_DIV)&I2S_CLKM_DIV_NUM)<<I2S_CLKM_DIV_NUM_S));
 
 
 	//No idea if ints are needed...
