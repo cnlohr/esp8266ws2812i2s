@@ -28,10 +28,10 @@ uint32_t frame = 0;
 //int ICACHE_FLASH_ATTR StartMDNS();
 
 
-void user_rf_pre_init(void) {/*nothing.*/}
+void ICACHE_FLASH_ATTR user_rf_pre_init(void) {/*nothing.*/}
 
 
-char * strcat( char * dest, char * src ) { return strcat(dest, src ); }
+char * ICACHE_FLASH_ATTR strcat( char * dest, char * src ) { return strcat(dest, src ); }
 
 
 
@@ -90,6 +90,7 @@ udpserver_recv(void *arg, char *pusrdata, unsigned short len)
 
 void ICACHE_FLASH_ATTR charrx( uint8_t c ) {/*Called from UART.*/}
 
+void  ICACHE_FLASH_ATTR umcall( void );
 
 void user_init(void)
 {
@@ -97,6 +98,11 @@ void user_init(void)
 
 	uart0_sendStr("\r\nesp82XX Web-GUI\r\n" VERSSTR "\b");
 
+	umcall();
+}
+
+void  ICACHE_FLASH_ATTR umcall( void )
+{
 //Uncomment this to force a system restore.
 //	system_restore();
 
@@ -127,13 +133,14 @@ void user_init(void)
 	WRITE_PERI_REG(RTC_GPIO_ENABLE,
 		READ_PERI_REG(RTC_GPIO_ENABLE) & (uint32)0xfffffffe);       //out disable
 
+/*
 	SetServiceName( "ws2812" );
 	AddMDNSName( "esp82xx" );
 	AddMDNSName( "ws2812" );
 	AddMDNSService( "_http._tcp", "An ESP8266 Webserver", WEB_PORT );
 	AddMDNSService( "_ws2812._udp", "WS2812 Driver", COM_PORT );
 	AddMDNSService( "_esp82xx._udp", "ESP8266 Backend", BACKEND_PORT );
-
+*/
 	//Add a process
 	system_os_task(procTask, procTaskPrio, procTaskQueue, procTaskQueueLen);
 
@@ -161,3 +168,38 @@ void user_init(void)
 //There is no code in this project that will cause reboots if interrupts are disabled.
 void EnterCritical() {}
 void ExitCritical() {}
+
+//For SDK 2.0.0 only.
+uint32 ICACHE_FLASH_ATTR
+user_rf_cal_sector_set(void)
+{
+    enum flash_size_map size_map = system_get_flash_size_map();
+    uint32 rf_cal_sec = 0;
+
+    switch (size_map) {
+        case FLASH_SIZE_4M_MAP_256_256:
+            rf_cal_sec = 128 - 8;
+            break;
+
+        case FLASH_SIZE_8M_MAP_512_512:
+            rf_cal_sec = 256 - 5;
+            break;
+
+        case FLASH_SIZE_16M_MAP_512_512:
+        case FLASH_SIZE_16M_MAP_1024_1024:
+            rf_cal_sec = 512 - 5;
+            break;
+
+        case FLASH_SIZE_32M_MAP_512_512:
+        case FLASH_SIZE_32M_MAP_1024_1024:
+            rf_cal_sec = 1024 - 5;
+            break;
+
+        default:
+            rf_cal_sec = 0;
+            break;
+    }
+
+    return rf_cal_sec;
+}
+

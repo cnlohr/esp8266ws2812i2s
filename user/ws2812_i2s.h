@@ -30,7 +30,7 @@
 //#define SK6812
 
 void ICACHE_FLASH_ATTR ws2812_init();
-void ws2812_push( uint8_t * buffer, uint16_t buffersize ); //Buffersize = Nr LEDs * 3
+void ICACHE_FLASH_ATTR ws2812_push( uint8_t * buffer, uint16_t buffersize ); //Buffersize = Nr LEDs * 3
 
 #endif
 
