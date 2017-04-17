@@ -1,4 +1,4 @@
-#ESP8266 I2S WS2812 Driver 
+# ESP8266 I2S WS2812 Driver 
 
 Provides more reliable WS2812 driving... And a nifty websockets-based interface for the ESP8266.  
 If you want to watch a video about this project, click the video link below.
