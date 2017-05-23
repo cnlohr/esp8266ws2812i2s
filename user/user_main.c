@@ -31,10 +31,6 @@ uint32_t frame = 0;
 void ICACHE_FLASH_ATTR user_rf_pre_init(void) {/*nothing.*/}
 
 
-char * ICACHE_FLASH_ATTR strcat( char * dest, char * src ) { return strcat(dest, src ); }
-
-
-
 //Tasks that happen all the time.
 os_event_t    procTaskQueue[procTaskQueueLen];
 static void ICACHE_FLASH_ATTR procTask(os_event_t *events)
@@ -49,6 +45,7 @@ static void ICACHE_FLASH_ATTR patternTimer(void *arg)
 {
     if(UsrCfg->ptrn == PTRN_NONE) return;
 
+	if( UsrCfg->nled > 450 ) UsrCfg->nled = 450;
     int it;
     for(it=0; it<UsrCfg->nled; ++it) {
         uint32_t hex = hex_pattern( UsrCfg->ptrn, it, UsrCfg->nled, frame, UsrCfg->clr );
@@ -123,24 +120,13 @@ void  ICACHE_FLASH_ATTR umcall( void )
 
 	CSInit();
 
-	//Set GPIO16 for INput
-	WRITE_PERI_REG(PAD_XPD_DCDC_CONF,
-		(READ_PERI_REG(PAD_XPD_DCDC_CONF) & 0xffffffbc) | (uint32)0x1);     // mux configuration for XPD_DCDC and rtc_gpio0 connection
-
-	WRITE_PERI_REG(RTC_GPIO_CONF,
-		(READ_PERI_REG(RTC_GPIO_CONF) & (uint32)0xfffffffe) | (uint32)0x0); //mux configuration for out enable
-
-	WRITE_PERI_REG(RTC_GPIO_ENABLE,
-		READ_PERI_REG(RTC_GPIO_ENABLE) & (uint32)0xfffffffe);       //out disable
-
-/*
 	SetServiceName( "ws2812" );
 	AddMDNSName( "esp82xx" );
 	AddMDNSName( "ws2812" );
 	AddMDNSService( "_http._tcp", "An ESP8266 Webserver", WEB_PORT );
 	AddMDNSService( "_ws2812._udp", "WS2812 Driver", COM_PORT );
 	AddMDNSService( "_esp82xx._udp", "ESP8266 Backend", BACKEND_PORT );
-*/
+
 	//Add a process
 	system_os_task(procTask, procTaskPrio, procTaskQueue, procTaskQueueLen);
 
@@ -169,37 +155,4 @@ void  ICACHE_FLASH_ATTR umcall( void )
 void EnterCritical() {}
 void ExitCritical() {}
 
-//For SDK 2.0.0 only.
-uint32 ICACHE_FLASH_ATTR
-user_rf_cal_sector_set(void)
-{
-    enum flash_size_map size_map = system_get_flash_size_map();
-    uint32 rf_cal_sec = 0;
-
-    switch (size_map) {
-        case FLASH_SIZE_4M_MAP_256_256:
-            rf_cal_sec = 128 - 8;
-            break;
-
-        case FLASH_SIZE_8M_MAP_512_512:
-            rf_cal_sec = 256 - 5;
-            break;
-
-        case FLASH_SIZE_16M_MAP_512_512:
-        case FLASH_SIZE_16M_MAP_1024_1024:
-            rf_cal_sec = 512 - 5;
-            break;
-
-        case FLASH_SIZE_32M_MAP_512_512:
-        case FLASH_SIZE_32M_MAP_1024_1024:
-            rf_cal_sec = 1024 - 5;
-            break;
-
-        default:
-            rf_cal_sec = 0;
-            break;
-    }
-
-    return rf_cal_sec;
-}
 
