@@ -3,6 +3,8 @@
 Provides more reliable WS2812 driving... And a nifty websockets-based interface for the ESP8266.  
 If you want to watch a video about this project, click the video link below.
 
+*Note: Most of the functionality is imported from a submodule ([esp82xx](https://github.com/cnlohr/esp82xx)). The submodule is more regularly updated and most of the technical description and troubleshooting advice is located there. You might want to `cd esp82xx; git pull origin master;` to fix (or sometimes introduce new) errors. The dev branch of both esp9266ws2812i2 and esp82xx might even be more cutting etch.*
+
 [![Youtube: Using I2S on the ESP8266 to drive WS2812Bs](http://img.youtube.com/vi/6zqGwxqJQnw/0.jpg)](http://www.youtube.com/watch?v=6zqGwxqJQnw)
 
 This project is based off of the Espressif I2S interface for an [mp3 player](https://github.com/espressif/esp8266_mp3_decoder/)
