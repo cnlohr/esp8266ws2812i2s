@@ -9,7 +9,7 @@ If you want to watch a video about this project, click the video link below.
 
 This project is based off of the Espressif I2S interface for an [mp3 player](https://github.com/espressif/esp8266_mp3_decoder/)
 
-If you want more information about the build environment, etc.  You should check out the [regular WS2812 driver](https://github.com/cnlohr/ws2812esp8266).
+If you want more information about the build environment, etc.  You should check out [esp82xx](https://github.com/cnlohr/esp82xx).
 
 This project is still jankey and needs some cleanup.  
 The way it currently works is to continuously send WS2812 frames and when new data comes in on port 7777, it just updates the frames.
